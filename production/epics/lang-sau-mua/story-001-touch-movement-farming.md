@@ -1,12 +1,12 @@
 # Story 001: Di chuyển bằng cảm ứng và làm ruộng
 
 > **Epic**: Làng Sau Mưa
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: L
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: [set by /dev-story when implementation begins]
+> **Last Updated**: 2026-10-24
 
 ## Context
 
@@ -61,11 +61,15 @@ N/A (minimal — no control manifest)
 
 ## Files
 
-- `src/gameplay/farming/` (logic ruộng, dữ liệu cây)
-- `src/gameplay/player/` (di chuyển cảm ứng)
-- `tests/unit/farming/farming_test.gd`
-
----
+- `src/main.gd`
+- `src/main.tscn`
+- `src/gameplay/farming/crop_database.gd`
+- `src/gameplay/farming/farm_grid.gd`
+- `src/gameplay/farming/farm_view.gd`
+- `src/gameplay/player/player.gd`
+- `src/ui/hud.gd`
+- `assets/data/crops.json`
+- `project.godot` (run/main_scene)
 
 ## QA Test Cases
 
@@ -89,3 +93,12 @@ N/A (minimal — no control manifest)
 
 - Depends on: None
 - Unlocks: `production/epics/lang-sau-mua/story-002-day-cycle-seasons.md`, `production/epics/lang-sau-mua/story-003-village-market.md`
+
+---
+
+## Completion Notes
+**Completed**: 2026-10-24
+**Criteria**: 9/9 passing (AC-1 confirmed by hand, no still image possible for movement; AC-4's freshly-watered state is not in the retained screenshot)
+**Deviations**: Advisory — gameplay constants and Vietnamese UI strings hardcoded; no phone display config yet (viewport/stretch/orientation, deferred by user); some untyped Dictionaries and unguarded getters. Out of scope — `.godot/global_script_class_cache.cfg`, `src/main.gd.uid` (Godot-generated).
+**Test Evidence**: waived at qa.level minimal; screenshots `production/qa/evidence/story-001-touch-movement-farming/start.png` and `scenario-states.png`
+**Reviewed by**: self, no independent review

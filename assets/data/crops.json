@@ -1,0 +1,28 @@
+{
+  "crops": [
+    {
+      "id": "cai_xanh",
+      "name": "Cải xanh",
+      "growth_days": 2,
+      "sell_price": 15,
+      "seasons": ["xuan", "thu"],
+      "color": "#5fbf4a"
+    },
+    {
+      "id": "ca_chua",
+      "name": "Cà chua",
+      "growth_days": 3,
+      "sell_price": 30,
+      "seasons": ["ha"],
+      "color": "#e0463a"
+    },
+    {
+      "id": "ngo",
+      "name": "Ngô",
+      "growth_days": 4,
+      "sell_price": 50,
+      "seasons": ["ha", "thu"],
+      "color": "#f0c93c"
+    }
+  ]
+}

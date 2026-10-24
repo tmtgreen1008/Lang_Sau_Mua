@@ -1,0 +1,8 @@
+Reviewed-Content-Hash: src/main.gd 02106d80915a356b58b53bce58ea3a6a00f7ed41
+Reviewed-Content-Hash: src/main.tscn d867912706ac708defd4d938c0015235f6da8048
+Reviewed-Content-Hash: src/gameplay/farming/crop_database.gd e56711240b15b47258a238e9bfda684c141157de
+Reviewed-Content-Hash: src/gameplay/farming/farm_grid.gd 0650e6b4c45664251c3b5e6dff4a56e3b43aef8a
+Reviewed-Content-Hash: src/gameplay/farming/farm_view.gd f0918366fcd6fb333ab9a332bbdbce69aec3a1e0
+Reviewed-Content-Hash: src/gameplay/player/player.gd b97c0248bbf8b0548f3581b5e3b003ebf6c74bec
+Reviewed-Content-Hash: src/ui/hud.gd 5de9bd5b0b6a8dc0c65cdf3052ddd097d194e6db
+Reviewed-Content-Hash: assets/data/crops.json 3461ff2f443183e85c0912505be9d43aec254128
