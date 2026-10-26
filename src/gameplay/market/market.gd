@@ -45,6 +45,17 @@ func add_money(amount: int) -> void:
 	money_changed.emit(money)
 
 
+## Market state as plain data: {money: int} (story 006).
+func to_dict() -> Dictionary:
+	return {"money": money}
+
+
+## Restores state written by [method to_dict]. Negative money becomes 0. Emits no
+## signals: refresh the HUD afterwards.
+func from_dict(data: Dictionary) -> void:
+	money = maxi(0, int(data.get("money", 0)))
+
+
 ## Sells up to [param quantity] units of [param crop_id], never more than owned.
 ## Returns the number of units actually sold; 0 (and nothing changes) when the crop is
 ## unknown, the quantity is not positive, or none is owned.

@@ -57,6 +57,8 @@ var _village: VillageProgress
 var _village_view: VillageView
 ## HUD line about a restored village piece, waiting for the neighbor panel to close.
 var _village_text: String = ""
+## Story 006: reads and writes user://savegame.json.
+var _save_game: SaveGame = SaveGame.new()
 ## False when a data file failed to load; input and clock are then skipped.
 var _initialised: bool = false
 ## True while the player walks to the stall to open the market.
@@ -152,6 +154,7 @@ func _ready() -> void:
 	_clock.day_advanced.connect(_on_day_advanced)
 	_grid.current_season = _clock.get_season_id()
 	_refresh_time_hud()
+	_load_saved_game()
 	_initialised = true
 
 
@@ -226,6 +229,52 @@ func _on_player_arrived() -> void:
 			_hud.show_message(str(FAIL_MESSAGES[tool]))
 
 
+## Autosave when the app goes to the background, loses focus or is asked to close.
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, \
+		NOTIFICATION_WM_WINDOW_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST:
+			save_game()
+
+
+## Writes the whole game state to the save file. Returns false when nothing was written
+## (also before the game finished starting, so a failed start never overwrites a save).
+func save_game() -> bool:
+	if not _initialised:
+		return false
+	return _save_game.save({
+		"farm": _grid.to_dict(),
+		"clock": _clock.to_dict(),
+		"market": _market.to_dict(),
+		"neighbors": _book.to_dict(),
+		"village": _village.to_dict(),
+	})
+
+
+## Startup: applies the last save if there is one; says so when a file was unusable.
+func _load_saved_game() -> void:
+	if not _save_game.has_save():
+		return
+	var state: Dictionary = _save_game.load_state()
+	if state.is_empty():
+		if _save_game.last_load_failed:
+			_hud.show_message("Không đọc được file lưu, bắt đầu game mới.")
+		return
+	_grid.from_dict(state["farm"] as Dictionary)
+	_clock.from_dict(state["clock"] as Dictionary)
+	_market.from_dict(state["market"] as Dictionary)
+	_book.from_dict(state["neighbors"] as Dictionary)
+	_village.from_dict(state["village"] as Dictionary)
+	# The loaders emit nothing: refresh every display by hand, without effects.
+	_grid.current_season = _clock.get_season_id()
+	_hud.set_unlocked_crops(_book.get_unlocked_crops())
+	_hud.set_inventory(_grid.inventory)
+	_hud.set_money(_market.money)
+	_refresh_time_hud()
+	_farm_view.queue_redraw()
+	_village_view.sync_instant()
+
+
 func _process(delta: float) -> void:
 	if not _initialised:
 		return
@@ -253,6 +302,7 @@ func _on_day_advanced(day_number: int) -> void:
 	_grid.advance_day()
 	_refresh_time_hud()
 	_hud.show_message("Ngày %d! Cây đã tưới lớn thêm, cây khô héo mất vụ." % day_number)
+	save_game()
 
 
 func _on_crop_harvested(crop_id: String) -> void:
@@ -265,6 +315,7 @@ func _on_sell_requested(crop_id: String, quantity: int) -> void:
 	if sold > 0:
 		_hud.show_message("Bán %d %s, được %d tiền." % [
 				sold, _db.get_crop_name(crop_id), sold * _market.get_unit_price(crop_id)])
+		save_game()
 	else:
 		# Nothing sold (stale picker or empty stock): resync the panel and say so.
 		_market_panel.refresh(_grid.inventory)
@@ -303,6 +354,7 @@ func _on_hand_over_requested(neighbor_id: String) -> void:
 	var reward_text: String = " ".join(parts)
 	_hud.show_message(reward_text)
 	_neighbor_panel.show_result("%s\n%s" % [str(request.get("done_text", "")), reward_text])
+	save_game()
 
 
 func _on_crop_unlocked(_crop_id: String) -> void:

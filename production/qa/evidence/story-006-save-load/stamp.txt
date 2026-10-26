@@ -1,0 +1,6 @@
+Reviewed-Content-Hash: src/core/save/save_game.gd 017455154d99b4e060bec69ca81c6fc8788ca9a3
+Reviewed-Content-Hash: src/main.gd a37399a8c9f7f10eb649aee2a29a8ba0051a8307
+Reviewed-Content-Hash: src/gameplay/farming/farm_grid.gd 9660997d55be999ce81aea8e48e21b2924fa36a1
+Reviewed-Content-Hash: src/gameplay/time/day_clock.gd e73e2c9fd9664e154350583a9e14c8c87f6b7a58
+Reviewed-Content-Hash: src/gameplay/market/market.gd fdd3626041c9e9cb0335c8d95db5742e7fb95724
+Reviewed-Content-Hash: src/gameplay/neighbors/neighbor_book.gd df1b690c5f4350a4b6043943c99fd874177595af

@@ -126,6 +126,25 @@ func get_season_name() -> String:
 	return _season_names[_season_index()]
 
 
+## Clock state as plain data: {day_number, phase_index, phase_elapsed}. The season is
+## derived from the day number, so it is not stored (story 006).
+func to_dict() -> Dictionary:
+	return {"day_number": day_number, "phase_index": _phase_index, "phase_elapsed": _phase_elapsed}
+
+
+## Restores state written by [method to_dict] (config must already be loaded). Values are
+## clamped into range. Emits no signals.
+func from_dict(data: Dictionary) -> void:
+	if _phase_ids.is_empty():
+		return
+	day_number = maxi(1, int(data.get("day_number", 1)))
+	_phase_index = clampi(int(data.get("phase_index", 0)), 0, _phase_ids.size() - 1)
+	var elapsed: float = float(data.get("phase_elapsed", 0.0))
+	if is_nan(elapsed) or elapsed < 0.0 or elapsed >= _phase_seconds[_phase_index]:
+		elapsed = 0.0
+	_phase_elapsed = elapsed
+
+
 func _season_index() -> int:
 	return ((day_number - 1) / _days_per_season) % _season_ids.size()
 

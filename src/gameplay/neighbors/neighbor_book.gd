@@ -216,12 +216,18 @@ func from_dict(data: Dictionary) -> void:
 		_activate_first_open(neighbor_id)
 	_unlocked_crops.clear()
 	_unlocked_dishes.clear()
-	for crop_id: Variant in data.get("unlocked_crops", []) as Array:
-		if not _unlocked_crops.has(str(crop_id)):
-			_unlocked_crops.append(str(crop_id))
-	for dish_id: Variant in data.get("unlocked_dishes", []) as Array:
-		if _dish_names.has(str(dish_id)) and not _unlocked_dishes.has(str(dish_id)):
-			_unlocked_dishes.append(str(dish_id))
+	# The starting crops are always unlocked, whatever the save says.
+	_unlocked_crops.append_array(_start_crops)
+	var saved_crops: Variant = data.get("unlocked_crops", [])
+	if saved_crops is Array:
+		for crop_id: Variant in saved_crops as Array:
+			if not _unlocked_crops.has(str(crop_id)):
+				_unlocked_crops.append(str(crop_id))
+	var saved_dishes: Variant = data.get("unlocked_dishes", [])
+	if saved_dishes is Array:
+		for dish_id: Variant in saved_dishes as Array:
+			if _dish_names.has(str(dish_id)) and not _unlocked_dishes.has(str(dish_id)):
+				_unlocked_dishes.append(str(dish_id))
 	# Seasons already finished must not fire the signal again.
 	_completed_seasons.clear()
 	for season_id: String in _all_seasons():

@@ -119,6 +119,65 @@ func advance_day() -> void:
 				plot_changed.emit(cell)
 
 
+## Farm state as plain JSON-friendly data: {columns, rows, current_season, inventory:
+## {crop_id: count}, plots: [{x, y, state, crop_id, growth, watered}]} (story 006).
+func to_dict() -> Dictionary:
+	var plots: Array[Dictionary] = []
+	for y: int in rows:
+		for x: int in columns:
+			var plot: Plot = _plot(Vector2i(x, y))
+			plots.append({
+				"x": x, "y": y, "state": int(plot.state), "crop_id": plot.crop_id,
+				"growth": plot.days_grown, "watered": plot.watered,
+			})
+	return {
+		"columns": columns, "rows": rows, "current_season": current_season,
+		"inventory": inventory.duplicate(), "plots": plots,
+	}
+
+
+## Restores state written by [method to_dict]. Unknown crops, cells and keys are ignored,
+## numbers may be floats (JSON). Emits no signals: redraw the view afterwards.
+func from_dict(data: Dictionary) -> void:
+	for plot: Plot in _plots:
+		plot.state = PlotState.EMPTY
+		plot.crop_id = ""
+		plot.days_grown = 0
+		plot.watered = false
+	var saved_plots: Variant = data.get("plots", [])
+	if saved_plots is Array:
+		for raw: Variant in saved_plots as Array:
+			if raw is Dictionary:
+				_restore_plot(raw as Dictionary)
+	for crop_id: String in inventory:
+		inventory[crop_id] = 0
+	var saved_inventory: Variant = data.get("inventory", {})
+	if saved_inventory is Dictionary:
+		for crop_id: Variant in saved_inventory as Dictionary:
+			if _db.has_crop(str(crop_id)):
+				inventory[str(crop_id)] = maxi(0, int((saved_inventory as Dictionary)[crop_id]))
+	current_season = str(data.get("current_season", ""))
+
+
+func _restore_plot(saved: Dictionary) -> void:
+	var cell := Vector2i(int(saved.get("x", -1)), int(saved.get("y", -1)))
+	if not is_valid_cell(cell):
+		return
+	var state: int = int(saved.get("state", PlotState.EMPTY))
+	if state < PlotState.EMPTY or state > PlotState.WITHERED:
+		return
+	var plot: Plot = _plot(cell)
+	var crop_id: String = str(saved.get("crop_id", ""))
+	if (state == PlotState.PLANTED or state == PlotState.WITHERED) and not _db.has_crop(crop_id):
+		# Crop no longer exists: leave the soil tilled.
+		plot.state = PlotState.TILLED
+		return
+	plot.state = state as PlotState
+	plot.crop_id = crop_id if state == PlotState.PLANTED or state == PlotState.WITHERED else ""
+	plot.days_grown = maxi(0, int(saved.get("growth", 0)))
+	plot.watered = bool(saved.get("watered", false)) and state == PlotState.PLANTED
+
+
 func _plot(cell: Vector2i) -> Plot:
 	return _plots[cell.y * columns + cell.x]
 

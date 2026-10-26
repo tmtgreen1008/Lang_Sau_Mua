@@ -1,12 +1,12 @@
 # Story 006: Lưu và tải game
 
 > **Epic**: Làng Sau Mưa
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: [set by /dev-story when implementation begins]
+> **Last Updated**: 2026-10-26
 
 ## Context
 
@@ -56,10 +56,12 @@ N/A (minimal — no control manifest)
 
 ## Files
 
-- `src/core/save/` (hệ thống lưu/tải)
-- `tests/integration/save/save_load_test.gd`
-
----
+- `src/core/save/save_game.gd`
+- `src/main.gd` (load on start, autosave triggers)
+- `src/gameplay/farming/farm_grid.gd` (to_dict/from_dict)
+- `src/gameplay/time/day_clock.gd` (to_dict/from_dict)
+- `src/gameplay/market/market.gd` (to_dict/from_dict)
+- `src/gameplay/neighbors/neighbor_book.gd` (from_dict keeps starting crops)
 
 ## QA Test Cases
 
@@ -83,3 +85,12 @@ N/A (minimal — no control manifest)
 
 - Depends on: `production/epics/lang-sau-mua/story-005-village-restoration.md`
 - Unlocks: None
+
+---
+
+## Completion Notes
+**Completed**: 2026-10-26
+**Criteria**: 7/7 passing (AC-3 confirmed on desktop only; autosave when the app goes to the background on a phone is untested)
+**Deviations**: Advisory — durability suggestions not applied: a Windows rename that is not atomic can leave only `savegame.tmp` (recovery only looks at `.bak`); `WM_WINDOW_FOCUS_OUT` makes 2-3 saves per focus loss; `unlocked_crops` is not checked against known crop ids; `null` or wrong types in a hand-edited save can half-apply `from_dict`; a save with a newer `version` is renamed to `.corrupt.json`; a transient read error may mark a good file corrupt. Out of scope — `.godot/global_script_class_cache.cfg` (Godot-generated), `design/narrative-outline.md` (not part of this story).
+**Test Evidence**: waived at qa.level minimal; screenshots `production/qa/evidence/story-006-save-load/before-save.png`, `after-load.png` (byte-identical); the programmer also ran round-trip (13 checks) and corrupt-file (11 cases) scripts outside the project
+**Reviewed by**: self, no independent review
