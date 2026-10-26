@@ -36,6 +36,15 @@ func get_unit_price(crop_id: String) -> int:
 	return _db.get_sell_price(crop_id)
 
 
+## Adds [param amount] money (e.g. a neighbor's reward) and emits [signal money_changed].
+## Non-positive amounts are ignored, so money never goes negative.
+func add_money(amount: int) -> void:
+	if amount <= 0:
+		return
+	money += amount
+	money_changed.emit(money)
+
+
 ## Sells up to [param quantity] units of [param crop_id], never more than owned.
 ## Returns the number of units actually sold; 0 (and nothing changes) when the crop is
 ## unknown, the quantity is not positive, or none is owned.

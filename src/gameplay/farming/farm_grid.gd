@@ -33,6 +33,10 @@ var inventory: Dictionary = {}
 ## Current season id (set by story 002's clock). Empty means no season restriction.
 var current_season: String = ""
 
+## Optional check `func(crop_id: String) -> bool` telling whether a crop is unlocked
+## (story 004). Left unset, every crop is plantable.
+var crop_unlock_check: Callable = Callable()
+
 var _db: CropDatabase
 var _plots: Array[Plot] = []
 
@@ -143,9 +147,15 @@ func can_plant_in_season(crop_id: String) -> bool:
 	return seasons is Array and (seasons as Array).has(current_season)
 
 
+## True when [param crop_id] is unlocked (always true while no check is set).
+func is_crop_unlocked(crop_id: String) -> bool:
+	return not crop_unlock_check.is_valid() or bool(crop_unlock_check.call(crop_id))
+
+
 func _plant(cell: Vector2i, crop_id: String) -> bool:
 	var plot: Plot = _plot(cell)
-	if plot.state != PlotState.TILLED or not can_plant_in_season(crop_id):
+	if plot.state != PlotState.TILLED or not is_crop_unlocked(crop_id) \
+			or not can_plant_in_season(crop_id):
 		return false
 	plot.state = PlotState.PLANTED
 	plot.crop_id = crop_id

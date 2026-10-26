@@ -1,0 +1,98 @@
+{
+  "_schema": {
+    "doc": "Neighbor requests for story 004 (design/game-brief.md, MVP feature 4). Read by NeighborBook (src/gameplay/neighbors/neighbor_book.gd). Keys starting with '_' are ignored.",
+    "start_unlocked_crops": "Array of crop ids (see crops.json) plantable from the start of the game.",
+    "dishes": "Array of {id, name}: every dish a request reward may unlock. Dishes are only listed in the UI, never cooked.",
+    "neighbors": "Array of neighbors, in map order. Each: {id, name, color (hex, placeholder figure), thanks_text (optional, shown once all requests are done), requests}.",
+    "requests": "Ordered linear list per neighbor (no branching). A request is available only after the previous one of the same neighbor is done. Each: {id (unique over the whole file), season ('ha' or 'thu', used only for the season_requests_completed signal), offer_text, missing_text, done_text, require, reward}.",
+    "require": "Object crop_id -> quantity (positive int) of produce handed over from the inventory.",
+    "reward": "{money: int >= 0, unlock_crop: crop id or '', unlock_dish: dish id or ''}. Money is in the same unit as crops.json sell_price."
+  },
+  "start_unlocked_crops": ["ngo"],
+  "dishes": [
+    { "id": "canh_ca_chua", "name": "Canh cà chua" },
+    { "id": "canh_cai_nau_tom", "name": "Canh cải nấu tôm" },
+    { "id": "bap_luoc", "name": "Bắp luộc" },
+    { "id": "goi_rau_cu", "name": "Gỏi rau củ" }
+  ],
+  "neighbors": [
+    {
+      "id": "ba_tu",
+      "name": "Bà Tư",
+      "color": "#c0653b",
+      "thanks_text": "Nhờ con mà bếp nhà bà ấm lại. Có gì bà Tư cũng nhớ ơn con nhé.",
+      "requests": [
+        {
+          "id": "ba_tu_1",
+          "season": "ha",
+          "offer_text": "Con ơi, bà Tư thèm nồi bắp nướng mà vườn bà hết ngô rồi. Con cho bà xin ít ngô nhé, bà gửi tiền công với ít hạt cà chua.",
+          "missing_text": "Chưa đủ đâu con ạ. Con ra ruộng thu thêm ngô rồi quay lại bà nhé.",
+          "done_text": "Ôi, ngô đẹp quá! Cảm ơn con. Bà gửi tiền công với hạt cà chua, con gieo thử xem.",
+          "require": { "ngo": 2 },
+          "reward": { "money": 30, "unlock_crop": "ca_chua", "unlock_dish": "" }
+        },
+        {
+          "id": "ba_tu_2",
+          "season": "thu",
+          "offer_text": "Trời se se lạnh, bà muốn nấu nồi canh chua cho cả xóm. Con mang cho bà ít cà chua chín nhé.",
+          "missing_text": "Cà chua chưa đủ rồi con. Con gom thêm cà chua đỏ mọng cho bà nhé.",
+          "done_text": "Cà chua đỏ au thế này thì canh ngon hết ý! Bà biếu con công thức canh cà chua.",
+          "require": { "ca_chua": 3 },
+          "reward": { "money": 60, "unlock_crop": "", "unlock_dish": "canh_ca_chua" }
+        }
+      ]
+    },
+    {
+      "id": "chu_ba",
+      "name": "Chú Ba",
+      "color": "#3b7ec0",
+      "thanks_text": "Làng mình có con về, chú vui lắm. Cứ ghé nhà chú uống chén trà nhé.",
+      "requests": [
+        {
+          "id": "chu_ba_1",
+          "season": "ha",
+          "offer_text": "Chú Ba đang làm cái chuồng gà, bụng đói meo. Con cho chú ít ngô lót dạ, chú đổi con tiền công với hạt cải xanh.",
+          "missing_text": "Chú còn thiếu một ít đó con. Thu thêm ngô rồi qua chú nhé.",
+          "done_text": "Ngon quá, đúng cái chú đang cần! Hạt cải xanh này con cầm lấy mà gieo.",
+          "require": { "ngo": 3 },
+          "reward": { "money": 40, "unlock_crop": "cai_xanh", "unlock_dish": "" }
+        },
+        {
+          "id": "chu_ba_2",
+          "season": "thu",
+          "offer_text": "Chú vừa đánh được mẻ tôm ngoài ao. Con mang cho chú ít cải xanh, mình nấu nồi canh cải nấu tôm nhé.",
+          "missing_text": "Cải xanh chưa đủ nồi canh đâu con. Con thu thêm rồi quay lại nhé.",
+          "done_text": "Rau tươi thế này, nồi canh chắc ngọt lắm! Chú gửi con tiền công với món canh cải nấu tôm.",
+          "require": { "cai_xanh": 4 },
+          "reward": { "money": 50, "unlock_crop": "", "unlock_dish": "canh_cai_nau_tom" }
+        }
+      ]
+    },
+    {
+      "id": "co_sau",
+      "name": "Cô Sáu",
+      "color": "#a050b0",
+      "thanks_text": "Cô Sáu cảm ơn con nhiều lắm. Làng sau mưa lại có tiếng cười rồi.",
+      "requests": [
+        {
+          "id": "co_sau_1",
+          "season": "ha",
+          "offer_text": "Cô Sáu muốn luộc ít bắp mang ra chợ chiều. Con giúp cô ít ngô nhé, cô gửi con tiền công và cách luộc bắp.",
+          "missing_text": "Cô cần thêm chút ngô nữa con ơi. Con ra ruộng thu rồi quay lại nhé.",
+          "done_text": "Bắp dẻo thơm ghê! Cảm ơn con, cô gửi con cách luộc bắp cô hay làm.",
+          "require": { "ngo": 2 },
+          "reward": { "money": 35, "unlock_crop": "", "unlock_dish": "bap_luoc" }
+        },
+        {
+          "id": "co_sau_2",
+          "season": "thu",
+          "offer_text": "Cô định trộn đĩa gỏi rau củ đãi cả xóm. Con mang cho cô cà chua với cải xanh nhé.",
+          "missing_text": "Còn thiếu rau củ cho đĩa gỏi rồi con. Con gom thêm rồi cô trộn nhé.",
+          "done_text": "Đĩa gỏi này đẹp mắt quá! Cô gửi con tiền công và món gỏi rau củ của cô.",
+          "require": { "ca_chua": 3, "cai_xanh": 2 },
+          "reward": { "money": 80, "unlock_crop": "", "unlock_dish": "goi_rau_cu" }
+        }
+      ]
+    }
+  ]
+}

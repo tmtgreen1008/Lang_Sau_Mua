@@ -1,12 +1,12 @@
 # Story 004: 3 hàng xóm và nhờ vả
 
 > **Epic**: Làng Sau Mưa
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: L
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: [set by /dev-story when implementation begins]
+> **Last Updated**: 2026-10-26
 
 ## Context
 
@@ -57,11 +57,15 @@ N/A (minimal — no control manifest)
 
 ## Files
 
-- `src/gameplay/neighbors/` (logic nhờ vả)
-- `src/ui/dialogue/` (hộp thoại đơn giản)
-- `tests/integration/neighbors/neighbor_requests_test.gd`
-
----
+- `assets/data/neighbors.json`
+- `src/gameplay/neighbors/neighbor_book.gd`
+- `src/gameplay/neighbors/neighbor_view.gd`
+- `src/ui/neighbors/neighbor_panel.gd`
+- `src/ui/neighbors/dish_panel.gd`
+- `src/main.gd` (neighbors wiring, hand-over, reward money)
+- `src/ui/hud.gd` (unlocked-crop selector, Món ăn button)
+- `src/gameplay/market/market.gd` (add_money)
+- `src/gameplay/farming/farm_grid.gd` (crop_unlock_check, is_crop_unlocked)
 
 ## QA Test Cases
 
@@ -86,3 +90,12 @@ N/A (minimal — no control manifest)
 
 - Depends on: `production/epics/lang-sau-mua/story-001-touch-movement-farming.md`, `production/epics/lang-sau-mua/story-003-village-market.md`
 - Unlocks: `production/epics/lang-sau-mua/story-005-village-restoration.md`
+
+---
+
+## Completion Notes
+**Completed**: 2026-10-26
+**Criteria**: 8/8 passing (AC-2 confirmed by hand; AC-8 verified only by a scratch logic check, not visible on screen)
+**Deviations**: Advisory — UI button/label strings hardcoded, no localization; NeighborBook.from_dict clears unlocked crops without re-adding the starting crops (story 006 must handle it); neighbors.json is not validated (quantity <= 0, unknown crop ids); autumn requests of Bà Tư and Cô Sáu need tomatoes that can only be grown in summer. Fixed during the story — the first implementation never paid the money reward (added `_market.add_money` in main.gd). Out of scope — `.godot/global_script_class_cache.cfg` (Godot-generated). Design decision approved by the user — the game starts with Ngô only; Cà chua and Cải xanh are unlocked by requests.
+**Test Evidence**: waived at qa.level minimal; screenshots `production/qa/evidence/story-004-neighbors-requests/map.png`, `panel.png`, `panelok.png`, `unlocked.png`
+**Reviewed by**: self, no independent review

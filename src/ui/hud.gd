@@ -12,6 +12,8 @@ extends CanvasLayer
 
 ## Emitted when the player taps the "Đi ngủ" (end day early) button.
 signal sleep_requested
+## Emitted when the player taps the "Món ăn" (unlocked dishes) button.
+signal dishes_requested
 
 const MIN_BUTTON_SIZE: Vector2 = Vector2(120.0, 72.0)
 const FONT_SIZE: int = 24
@@ -32,6 +34,10 @@ var current_tool: FarmGrid.Tool = FarmGrid.Tool.HOE
 var current_crop_id: String = ""
 
 var _db: CropDatabase
+var _crop_row: HBoxContainer
+## Crop ids shown in the selector and the inventory label (set by set_unlocked_crops).
+var _unlocked_crops: Array[String] = []
+var _last_inventory: Dictionary = {}
 var _inventory_label: Label
 var _money_label: Label
 var _time_label: Label
@@ -62,6 +68,9 @@ func setup(db: CropDatabase) -> void:
 	var sleep_button: Button = _make_button("Đi ngủ", false)
 	sleep_button.pressed.connect(func() -> void: sleep_requested.emit())
 	top_row.add_child(sleep_button)
+	var dishes_button: Button = _make_button("Món ăn", false)
+	dishes_button.pressed.connect(func() -> void: dishes_requested.emit())
+	top_row.add_child(dishes_button)
 
 	_time_label = _make_label()
 	_time_label.add_theme_font_size_override("font_size", TIME_FONT_SIZE)
@@ -82,19 +91,12 @@ func setup(db: CropDatabase) -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(spacer)
 
-	var crop_row := HBoxContainer.new()
-	crop_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	crop_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(crop_row)
-	var crop_group := ButtonGroup.new()
-	for crop_id: String in db.get_crop_ids():
-		var crop_button: Button = _make_button("Hạt %s" % db.get_crop_name(crop_id), true)
-		crop_button.button_group = crop_group
-		crop_button.pressed.connect(_on_crop_pressed.bind(crop_id))
-		crop_row.add_child(crop_button)
-		if current_crop_id.is_empty():
-			current_crop_id = crop_id
-			crop_button.button_pressed = true
+	_crop_row = HBoxContainer.new()
+	_crop_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_crop_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_crop_row)
+	_unlocked_crops = db.get_crop_ids().duplicate()
+	_rebuild_crop_row()
 
 	var tool_row := HBoxContainer.new()
 	tool_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -112,10 +114,40 @@ func setup(db: CropDatabase) -> void:
 
 ## Refreshes the inventory label from a crop_id -> count Dictionary.
 func set_inventory(inventory: Dictionary) -> void:
+	_last_inventory = inventory
 	var parts: PackedStringArray = []
 	for crop_id: String in _db.get_crop_ids():
-		parts.append("%s: %d" % [_db.get_crop_name(crop_id), int(inventory.get(crop_id, 0))])
+		if _unlocked_crops.has(crop_id):
+			parts.append("%s: %d" % [_db.get_crop_name(crop_id), int(inventory.get(crop_id, 0))])
 	_inventory_label.text = "Túi đồ  " + "  |  ".join(parts)
+
+
+## Limits the crop selector (and inventory label) to [param crop_ids], rebuilding the
+## selector row. The selected crop stays if still listed, otherwise the first one is chosen.
+func set_unlocked_crops(crop_ids: Array[String]) -> void:
+	_unlocked_crops = crop_ids.duplicate()
+	_rebuild_crop_row()
+	set_inventory(_last_inventory)
+
+
+func _rebuild_crop_row() -> void:
+	for child: Node in _crop_row.get_children():
+		_crop_row.remove_child(child)
+		_interactive.erase(child)
+		child.queue_free()
+	if not _unlocked_crops.has(current_crop_id):
+		current_crop_id = ""
+	var crop_group := ButtonGroup.new()
+	for crop_id: String in _db.get_crop_ids():
+		if not _unlocked_crops.has(crop_id):
+			continue
+		var crop_button: Button = _make_button("Hạt %s" % _db.get_crop_name(crop_id), true)
+		crop_button.button_group = crop_group
+		crop_button.pressed.connect(_on_crop_pressed.bind(crop_id))
+		_crop_row.add_child(crop_button)
+		if current_crop_id.is_empty():
+			current_crop_id = crop_id
+		crop_button.button_pressed = crop_id == current_crop_id
 
 
 ## Shows the player's money, always visible.

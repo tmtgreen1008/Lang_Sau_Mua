@@ -1,0 +1,9 @@
+Reviewed-Content-Hash: assets/data/neighbors.json 041e822a74df85e9827e61c94f3359cd32d94520
+Reviewed-Content-Hash: src/gameplay/neighbors/neighbor_book.gd ab693d2853b054651ac100fe503754163b2c16de
+Reviewed-Content-Hash: src/gameplay/neighbors/neighbor_view.gd f0c887e17568de0fda286522edff7e738dfdb833
+Reviewed-Content-Hash: src/ui/neighbors/neighbor_panel.gd 781503dd69d79201b874a97fbfbdef8298080bf4
+Reviewed-Content-Hash: src/ui/neighbors/dish_panel.gd 4a78c6f302dcdd5ae809f5ad320bd4ee1c1a2c9c
+Reviewed-Content-Hash: src/main.gd d2daca91fb1049575b7cc5f4608cf74d4d2a7475
+Reviewed-Content-Hash: src/ui/hud.gd 7d926cdc3f313b0da21ec97daf5bec7659e74129
+Reviewed-Content-Hash: src/gameplay/market/market.gd fe705995e504770468be7d932373f4010f012a4d
+Reviewed-Content-Hash: src/gameplay/farming/farm_grid.gd 4b89cebc511ca908a6fe88a0ee6853862622bc4d
