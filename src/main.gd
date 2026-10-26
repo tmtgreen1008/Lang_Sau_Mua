@@ -11,7 +11,8 @@ const CROPS_PATH: String = "res://assets/data/crops.json"
 const TIME_CONFIG_PATH: String = "res://assets/data/time_config.json"
 const FIELD_COLUMNS: int = 5
 const FIELD_ROWS: int = 4
-const FIELD_TOP: float = 100.0
+const FIELD_TOP: float = 128.0
+const STALL_POSITION: Vector2 = Vector2(880.0, 190.0)
 const GROUND_COLOR: Color = Color(0.45, 0.68, 0.38)
 
 ## Vietnamese feedback when a tool cannot be used on the tapped plot.
@@ -28,13 +29,24 @@ var _grid: FarmGrid
 var _farm_view: FarmView
 var _player: Player
 var _hud: Hud
+var _market: Market
+var _stall: MarketStallView
+var _market_panel: MarketPanel
+## False when a data file failed to load; input and clock are then skipped.
+var _initialised: bool = false
+## True while the player walks to the stall to open the market.
+var _pending_stall: bool = false
 ## Field cell to act on when the player arrives, or FarmView.INVALID_CELL.
 var _pending_cell: Vector2i = FarmView.INVALID_CELL
 
 
 func _ready() -> void:
-	_db.load_from_file(CROPS_PATH)
-	_clock.load_from_file(TIME_CONFIG_PATH)
+	if not _db.load_from_file(CROPS_PATH):
+		push_error("Main: cannot load crop data from %s; the game will not start." % CROPS_PATH)
+		return
+	if not _clock.load_from_file(TIME_CONFIG_PATH):
+		push_error("Main: cannot load time config from %s; the game will not start." % TIME_CONFIG_PATH)
+		return
 	_grid = FarmGrid.new(_db, FIELD_COLUMNS, FIELD_ROWS)
 	var viewport_size: Vector2 = get_viewport_rect().size
 
@@ -49,10 +61,23 @@ func _ready() -> void:
 	add_child(_player)
 	_player.arrived.connect(_on_player_arrived)
 
+	_market = Market.new(_grid, _db)
+	_stall = MarketStallView.new()
+	_stall.position = STALL_POSITION
+	add_child(_stall)
+
 	_hud = Hud.new()
 	add_child(_hud)
 	_hud.setup(_db)
 	_hud.set_inventory(_grid.inventory)
+	_hud.set_money(_market.money)
+	_market.money_changed.connect(_hud.set_money)
+	_market.inventory_changed.connect(_on_market_inventory_changed)
+
+	_market_panel = MarketPanel.new()
+	add_child(_market_panel)
+	_market_panel.setup(_db)
+	_market_panel.sell_requested.connect(_on_sell_requested)
 	_hud.sleep_requested.connect(_on_sleep_requested)
 	_grid.crop_harvested.connect(_on_crop_harvested)
 	_clock.phase_changed.connect(_on_phase_changed)
@@ -60,6 +85,7 @@ func _ready() -> void:
 	_clock.day_advanced.connect(_on_day_advanced)
 	_grid.current_season = _clock.get_season_id()
 	_refresh_time_hud()
+	_initialised = true
 
 
 func _draw() -> void:
@@ -67,6 +93,8 @@ func _draw() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not _initialised:
+		return
 	var touch := event as InputEventScreenTouch
 	if touch != null and touch.pressed:
 		_on_tap(touch.position)
@@ -79,7 +107,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_tap(canvas_position: Vector2) -> void:
-	if _hud.blocks_point(canvas_position):
+	if _market_panel.is_open() or _hud.blocks_point(canvas_position):
+		return
+	_pending_stall = _stall.contains_point(canvas_position)
+	if _pending_stall:
+		_pending_cell = FarmView.INVALID_CELL
+		_player.move_to(_stall.get_center())
 		return
 	var cell: Vector2i = _farm_view.cell_at(canvas_position)
 	_pending_cell = cell
@@ -90,6 +123,11 @@ func _on_tap(canvas_position: Vector2) -> void:
 
 
 func _on_player_arrived() -> void:
+	if _pending_stall:
+		_pending_stall = false
+		# TODO: the story allows opening the market at any phase; gate by phase later if wanted.
+		_market_panel.open(_grid.inventory)
+		return
 	if _pending_cell == FarmView.INVALID_CELL:
 		return
 	var cell: Vector2i = _pending_cell
@@ -104,6 +142,8 @@ func _on_player_arrived() -> void:
 
 
 func _process(delta: float) -> void:
+	if not _initialised:
+		return
 	_clock.tick(delta)
 
 
@@ -133,3 +173,19 @@ func _on_day_advanced(day_number: int) -> void:
 func _on_crop_harvested(crop_id: String) -> void:
 	_hud.set_inventory(_grid.inventory)
 	_hud.show_message("Thu hoạch được 1 %s!" % _db.get_crop_name(crop_id))
+
+
+func _on_sell_requested(crop_id: String, quantity: int) -> void:
+	var sold: int = _market.sell(crop_id, quantity)
+	if sold > 0:
+		_hud.show_message("Bán %d %s, được %d tiền." % [
+				sold, _db.get_crop_name(crop_id), sold * _market.get_unit_price(crop_id)])
+	else:
+		# Nothing sold (stale picker or empty stock): resync the panel and say so.
+		_market_panel.refresh(_grid.inventory)
+		_hud.show_message("Không bán được %s." % _db.get_crop_name(crop_id))
+
+
+func _on_market_inventory_changed() -> void:
+	_hud.set_inventory(_grid.inventory)
+	_market_panel.refresh(_grid.inventory)

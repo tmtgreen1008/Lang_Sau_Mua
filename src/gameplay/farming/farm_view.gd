@@ -8,7 +8,7 @@ extends Node2D
 ##   view.setup(grid, db)
 ##   var cell: Vector2i = view.cell_at(tap_position)
 
-const TILE_SIZE: float = 88.0
+const TILE_SIZE: float = 80.0
 const TILE_GAP: float = 4.0
 const INVALID_CELL: Vector2i = Vector2i(-1, -1)
 

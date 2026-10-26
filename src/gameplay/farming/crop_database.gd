@@ -64,6 +64,11 @@ func get_growth_days(crop_id: String) -> int:
 	return int(get_crop(crop_id).get("growth_days", 1))
 
 
+## Money for selling one unit of the crop (0 if unknown; never negative).
+func get_sell_price(crop_id: String) -> int:
+	return maxi(0, int(get_crop(crop_id).get("sell_price", 0)))
+
+
 ## Placeholder display colour.
 func get_crop_color(crop_id: String) -> Color:
 	return Color.from_string(str(get_crop(crop_id).get("color", "#ffffff")), Color.WHITE)

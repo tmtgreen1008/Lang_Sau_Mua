@@ -17,6 +17,8 @@ const MIN_BUTTON_SIZE: Vector2 = Vector2(120.0, 72.0)
 const FONT_SIZE: int = 24
 const TIME_FONT_SIZE: int = 36
 const MESSAGE_SECONDS: float = 2.5
+const MESSAGE_WIDTH: float = 320.0
+const MESSAGE_POSITION: Vector2 = Vector2(16.0, 140.0)
 const TOOL_NAMES: Dictionary = {
 	FarmGrid.Tool.HOE: "Cuốc",
 	FarmGrid.Tool.SEED: "Gieo hạt",
@@ -31,6 +33,7 @@ var current_crop_id: String = ""
 
 var _db: CropDatabase
 var _inventory_label: Label
+var _money_label: Label
 var _time_label: Label
 var _message_label: Label
 var _message_tween: Tween
@@ -52,6 +55,10 @@ func setup(db: CropDatabase) -> void:
 	_inventory_label = _make_label()
 	_inventory_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_row.add_child(_inventory_label)
+	_money_label = _make_label()
+	_money_label.add_theme_constant_override("outline_size", 8)
+	top_row.add_child(_money_label)
+	set_money(0)
 	var sleep_button: Button = _make_button("Đi ngủ", false)
 	sleep_button.pressed.connect(func() -> void: sleep_requested.emit())
 	top_row.add_child(sleep_button)
@@ -61,9 +68,14 @@ func setup(db: CropDatabase) -> void:
 	_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(_time_label)
 
+	# Feedback line sits in the left margin beside the field, never over the tiles.
 	_message_label = _make_label()
-	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	root.add_child(_message_label)
+	_message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_message_label.custom_minimum_size = Vector2(MESSAGE_WIDTH, 0.0)
+	_message_label.size = Vector2(MESSAGE_WIDTH, 0.0)
+	_message_label.position = MESSAGE_POSITION
+	_message_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_message_label)
 
 	var spacer := Control.new()
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -104,6 +116,11 @@ func set_inventory(inventory: Dictionary) -> void:
 	for crop_id: String in _db.get_crop_ids():
 		parts.append("%s: %d" % [_db.get_crop_name(crop_id), int(inventory.get(crop_id, 0))])
 	_inventory_label.text = "Túi đồ  " + "  |  ".join(parts)
+
+
+## Shows the player's money, always visible.
+func set_money(amount: int) -> void:
+	_money_label.text = "  Tiền: %d  " % amount
 
 
 ## Shows the day number, phase name and season name (large text).
