@@ -12,7 +12,9 @@ const TIME_CONFIG_PATH: String = "res://assets/data/time_config.json"
 const FIELD_COLUMNS: int = 5
 const FIELD_ROWS: int = 4
 const FIELD_TOP: float = 128.0
-const STALL_POSITION: Vector2 = Vector2(880.0, 190.0)
+## The market stall sits this far right of the field, at this height.
+const STALL_GAP_X: float = 60.0
+const STALL_TOP: float = 190.0
 const GROUND_COLOR: Color = Color(0.45, 0.68, 0.38)
 
 ## Vietnamese feedback when a tool cannot be used on the tapped plot.
@@ -63,7 +65,8 @@ func _ready() -> void:
 
 	_market = Market.new(_grid, _db)
 	_stall = MarketStallView.new()
-	_stall.position = STALL_POSITION
+	_stall.position = Vector2(
+			_farm_view.position.x + FIELD_COLUMNS * FarmView.TILE_SIZE + STALL_GAP_X, STALL_TOP)
 	add_child(_stall)
 
 	_hud = Hud.new()
