@@ -1,0 +1,6 @@
+Reviewed-Content-Hash: src/gameplay/time/day_clock.gd 254962f36b0b1f1abb978e4a67606b3fe5137d1d
+Reviewed-Content-Hash: assets/data/time_config.json 9b02c80a2124b5c669da832f3f0245672a83ed6f
+Reviewed-Content-Hash: assets/data/crops.json 53ade9ac3e9a1b0107dda72306b6878344c442e7
+Reviewed-Content-Hash: src/gameplay/farming/farm_grid.gd 1bf604f5f91f28c7208839718a180e81efbdaabc
+Reviewed-Content-Hash: src/ui/hud.gd d6eda3166311490f045f9d27856b0f1e55d8e138
+Reviewed-Content-Hash: src/main.gd 51c3c98cb9109fb85f792bf3891ffdf8c9080089

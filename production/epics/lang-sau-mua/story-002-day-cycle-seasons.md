@@ -1,12 +1,12 @@
 # Story 002: Chu kỳ ngày và 2 mùa
 
 > **Epic**: Làng Sau Mưa
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: [set by /dev-story when implementation begins]
+> **Last Updated**: 2026-10-26
 
 ## Context
 
@@ -55,10 +55,12 @@ N/A (minimal — no control manifest)
 
 ## Files
 
-- `src/gameplay/time/` (bộ đếm ngày và mùa)
-- `tests/unit/time/day_cycle_test.gd`
-
----
+- `src/gameplay/time/day_clock.gd`
+- `assets/data/time_config.json`
+- `assets/data/crops.json` (cai_xanh seasons → thu only)
+- `src/gameplay/farming/farm_grid.gd` (current_season, can_plant_in_season)
+- `src/ui/hud.gd` (time label, Đi ngủ button)
+- `src/main.gd` (clock wiring)
 
 ## QA Test Cases
 
@@ -82,3 +84,12 @@ N/A (minimal — no control manifest)
 
 - Depends on: `production/epics/lang-sau-mua/story-001-touch-movement-farming.md`
 - Unlocks: `production/epics/lang-sau-mua/story-003-village-market.md`
+
+---
+
+## Completion Notes
+**Completed**: 2026-10-26
+**Criteria**: 7/7 passing (AC-2, AC-4, AC-6 confirmed by hand; no retained image of the out-of-season refusal message or of the sleep action)
+**Deviations**: Advisory — day/phase/season label overlaps the first field row; main.gd ignores the result of loading time_config.json (a missing file would crash); hardcoded Vietnamese UI strings; crop selector does not show which crops are in season; no phone display config yet. Data change by design — crops.json cai_xanh seasons now [thu] (2 seasons only). Out of scope — `.godot/global_script_class_cache.cfg` (Godot-generated).
+**Test Evidence**: waived at qa.level minimal; screenshots `production/qa/evidence/story-002-day-cycle-seasons/start.png`, `day5-thu.png`
+**Reviewed by**: self, no independent review

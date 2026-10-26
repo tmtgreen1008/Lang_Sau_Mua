@@ -30,6 +30,9 @@ var rows: int
 ## Harvested produce: crop_id -> count.
 var inventory: Dictionary = {}
 
+## Current season id (set by story 002's clock). Empty means no season restriction.
+var current_season: String = ""
+
 var _db: CropDatabase
 var _plots: Array[Plot] = []
 
@@ -129,9 +132,20 @@ func _till(cell: Vector2i) -> bool:
 	return true
 
 
+## True when [param crop_id] may be planted in [member current_season] (always true
+## while no season is set). Unknown crops are never plantable.
+func can_plant_in_season(crop_id: String) -> bool:
+	if not _db.has_crop(crop_id):
+		return false
+	if current_season.is_empty():
+		return true
+	var seasons: Variant = _db.get_crop(crop_id).get("seasons", [])
+	return seasons is Array and (seasons as Array).has(current_season)
+
+
 func _plant(cell: Vector2i, crop_id: String) -> bool:
 	var plot: Plot = _plot(cell)
-	if plot.state != PlotState.TILLED or not _db.has_crop(crop_id):
+	if plot.state != PlotState.TILLED or not can_plant_in_season(crop_id):
 		return false
 	plot.state = PlotState.PLANTED
 	plot.crop_id = crop_id

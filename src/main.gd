@@ -8,6 +8,7 @@ extends Node2D
 ## arrival; tapping elsewhere just walks.
 
 const CROPS_PATH: String = "res://assets/data/crops.json"
+const TIME_CONFIG_PATH: String = "res://assets/data/time_config.json"
 const FIELD_COLUMNS: int = 5
 const FIELD_ROWS: int = 4
 const FIELD_TOP: float = 100.0
@@ -22,6 +23,7 @@ const FAIL_MESSAGES: Dictionary = {
 }
 
 var _db: CropDatabase = CropDatabase.new()
+var _clock: DayClock = DayClock.new()
 var _grid: FarmGrid
 var _farm_view: FarmView
 var _player: Player
@@ -32,6 +34,7 @@ var _pending_cell: Vector2i = FarmView.INVALID_CELL
 
 func _ready() -> void:
 	_db.load_from_file(CROPS_PATH)
+	_clock.load_from_file(TIME_CONFIG_PATH)
 	_grid = FarmGrid.new(_db, FIELD_COLUMNS, FIELD_ROWS)
 	var viewport_size: Vector2 = get_viewport_rect().size
 
@@ -50,8 +53,13 @@ func _ready() -> void:
 	add_child(_hud)
 	_hud.setup(_db)
 	_hud.set_inventory(_grid.inventory)
-	_hud.next_day_requested.connect(_on_next_day_requested)
+	_hud.sleep_requested.connect(_on_sleep_requested)
 	_grid.crop_harvested.connect(_on_crop_harvested)
+	_clock.phase_changed.connect(_on_phase_changed)
+	_clock.season_changed.connect(_on_season_changed)
+	_clock.day_advanced.connect(_on_day_advanced)
+	_grid.current_season = _clock.get_season_id()
+	_refresh_time_hud()
 
 
 func _draw() -> void:
@@ -88,12 +96,38 @@ func _on_player_arrived() -> void:
 	_pending_cell = FarmView.INVALID_CELL
 	var tool: FarmGrid.Tool = _hud.current_tool
 	if not _grid.apply_tool(tool, cell, _hud.current_crop_id):
-		_hud.show_message(str(FAIL_MESSAGES[tool]))
+		if tool == FarmGrid.Tool.SEED and not _grid.can_plant_in_season(_hud.current_crop_id):
+			_hud.show_message("%s không gieo được vào %s." % [
+					_db.get_crop_name(_hud.current_crop_id), _clock.get_season_name()])
+		else:
+			_hud.show_message(str(FAIL_MESSAGES[tool]))
 
 
-func _on_next_day_requested() -> void:
+func _process(delta: float) -> void:
+	_clock.tick(delta)
+
+
+func _refresh_time_hud() -> void:
+	_hud.set_time_info(_clock.day_number, _clock.get_phase_name(), _clock.get_season_name())
+
+
+func _on_sleep_requested() -> void:
+	_clock.sleep()
+
+
+func _on_phase_changed(_phase_id: String) -> void:
+	_refresh_time_hud()
+
+
+func _on_season_changed(season_id: String) -> void:
+	_grid.current_season = season_id
+	_hud.show_message("Sang %s! Chỉ gieo được cây hợp mùa." % _clock.get_season_name())
+
+
+func _on_day_advanced(day_number: int) -> void:
 	_grid.advance_day()
-	_hud.show_message("Ngày mới! Cây đã tưới lớn thêm, cây khô héo mất vụ.")
+	_refresh_time_hud()
+	_hud.show_message("Ngày %d! Cây đã tưới lớn thêm, cây khô héo mất vụ." % day_number)
 
 
 func _on_crop_harvested(crop_id: String) -> void:

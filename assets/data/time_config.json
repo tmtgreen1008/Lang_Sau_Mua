@@ -1,0 +1,13 @@
+{
+  "_schema": "phases: ordered list of day phases {id, name (Vietnamese HUD label), seconds (real seconds the phase lasts)}. days_per_season: whole days before the season switches. seasons: ordered list of {id (must match ids in crops.json 'seasons'), name (Vietnamese HUD label)}; the cycle repeats after the last one.",
+  "phases": [
+    { "id": "morning", "name": "Sáng", "seconds": 30.0 },
+    { "id": "afternoon", "name": "Chiều", "seconds": 30.0 },
+    { "id": "evening", "name": "Tối", "seconds": 30.0 }
+  ],
+  "days_per_season": 4,
+  "seasons": [
+    { "id": "ha", "name": "Mùa hạ" },
+    { "id": "thu", "name": "Mùa thu" }
+  ]
+}

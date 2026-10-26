@@ -1,18 +1,21 @@
 class_name Hud
 extends CanvasLayer
 ## Touch HUD: tool toolbar, crop selector, inventory label, message line and the
-## temporary "Ngày mới" button. Holds the selected tool/crop; knows no farm rules.
+## "Đi ngủ" button and the day/phase/season label. Holds the selected tool/crop;
+## knows no farm or clock rules.
 ##
 ## Usage:
 ##   hud.setup(db)
-##   hud.next_day_requested.connect(grid.advance_day)
+##   hud.sleep_requested.connect(clock.sleep)
+##   hud.set_time_info(1, "Sáng", "Mùa hạ")
 ##   hud.set_inventory(grid.inventory)
 
-## Emitted when the player taps the "Ngày mới" button.
-signal next_day_requested
+## Emitted when the player taps the "Đi ngủ" (end day early) button.
+signal sleep_requested
 
 const MIN_BUTTON_SIZE: Vector2 = Vector2(120.0, 72.0)
 const FONT_SIZE: int = 24
+const TIME_FONT_SIZE: int = 36
 const MESSAGE_SECONDS: float = 2.5
 const TOOL_NAMES: Dictionary = {
 	FarmGrid.Tool.HOE: "Cuốc",
@@ -28,6 +31,7 @@ var current_crop_id: String = ""
 
 var _db: CropDatabase
 var _inventory_label: Label
+var _time_label: Label
 var _message_label: Label
 var _message_tween: Tween
 ## Controls that swallow taps (used to keep UI taps from moving the player).
@@ -48,9 +52,14 @@ func setup(db: CropDatabase) -> void:
 	_inventory_label = _make_label()
 	_inventory_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_row.add_child(_inventory_label)
-	var next_day_button: Button = _make_button("Ngày mới", false)
-	next_day_button.pressed.connect(func() -> void: next_day_requested.emit())
-	top_row.add_child(next_day_button)
+	var sleep_button: Button = _make_button("Đi ngủ", false)
+	sleep_button.pressed.connect(func() -> void: sleep_requested.emit())
+	top_row.add_child(sleep_button)
+
+	_time_label = _make_label()
+	_time_label.add_theme_font_size_override("font_size", TIME_FONT_SIZE)
+	_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(_time_label)
 
 	_message_label = _make_label()
 	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -95,6 +104,11 @@ func set_inventory(inventory: Dictionary) -> void:
 	for crop_id: String in _db.get_crop_ids():
 		parts.append("%s: %d" % [_db.get_crop_name(crop_id), int(inventory.get(crop_id, 0))])
 	_inventory_label.text = "Túi đồ  " + "  |  ".join(parts)
+
+
+## Shows the day number, phase name and season name (large text).
+func set_time_info(day_number: int, phase_name: String, season_name: String) -> void:
+	_time_label.text = "Ngày %d  -  %s  -  %s" % [day_number, phase_name, season_name]
 
 
 ## Shows a short feedback line that clears itself after a moment.
