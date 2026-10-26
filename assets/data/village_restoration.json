@@ -1,0 +1,98 @@
+{
+  "_schema": {
+    "doc": "Village restoration for story 005 (design/game-brief.md, MVP feature 5). Logic is read by VillageProgress (src/gameplay/village/village_progress.gd), drawing by VillageView (src/gameplay/village/village_view.gd). Keys starting with '_' are ignored. Colours are hex strings '#rrggbb' or '#rrggbbaa'.",
+    "effect": "{duration (seconds the restored piece takes to blend from ruined to restored), flash (0..1, how far the piece brightens towards white at the middle of the blend), pulse_scale (extra scale, e.g. 0.08 = +8%, at the middle of the blend)}. Ignored when VillageView.reduce_motion is true (the change is then instant).",
+    "levels": "Array of appearance levels, ascending by min_requests. Each: {level (int, unique), min_requests (completed neighbor requests needed), name (display name), ground_tint (colour laid over the ground)}. The current level is the highest one whose min_requests is reached.",
+    "pieces": "Array of village pieces in restoration order. Each: {id (unique), name (used in the HUD message 'Làng đã dựng lại thêm <name>!'), unlock_at (number of completed requests at which the piece is restored), origin ([x, y] top-left of the piece in pixels RELATIVE TO THE TOP-LEFT OF THE FIELD, so negative x is left of the field), size ([w, h] bounding box used as the pulse pivot), shapes}.",
+    "shapes": "Array drawn in order, coordinates local to the piece origin. Each: {kind ('rect' g=[x,y,w,h] | 'ellipse' g=[cx,cy,rx,ry] | 'poly' g=[x1,y1,x2,y2,...]), ruined, restored}. ruined/restored are {g, color} or null. A null side means the shape fades in (null ruined) or out (null restored). When both sides exist with the same number of values, the geometry and colour blend between them."
+  },
+  "effect": { "duration": 1.0, "flash": 0.45, "pulse_scale": 0.08 },
+  "levels": [
+    { "level": 1, "min_requests": 0, "name": "Hoang tàn", "ground_tint": "#5a4630b0" },
+    { "level": 2, "min_requests": 2, "name": "Đang hồi sinh", "ground_tint": "#d8b86020" },
+    { "level": 3, "min_requests": 4, "name": "Sung túc", "ground_tint": "#ffc85a48" }
+  ],
+  "pieces": [
+    {
+      "id": "house_1", "name": "một ngôi nhà", "unlock_at": 1, "origin": [-352, 196], "size": [100, 96],
+      "shapes": [
+        { "kind": "ellipse", "ruined": { "g": [50, 92, 56, 9], "color": "#4a3524" }, "restored": null },
+        { "kind": "ellipse", "ruined": { "g": [24, 95, 24, 6], "color": "#6c7f8cd0" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [8, 48, 84, 44], "color": "#6e5a48" }, "restored": { "g": [8, 40, 84, 52], "color": "#c98a52" } },
+        { "kind": "poly", "ruined": { "g": [4, 52, 36, 26, 62, 44], "color": "#4e4439" }, "restored": { "g": [0, 42, 50, 6, 100, 42], "color": "#e3b341" } },
+        { "kind": "poly", "ruined": { "g": [70, 50, 98, 30, 102, 36, 76, 56], "color": "#3a2e24" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [40, 64, 20, 28], "color": "#3b2c20" }, "restored": { "g": [40, 60, 20, 32], "color": "#6b3f22" } },
+        { "kind": "rect", "ruined": { "g": [14, 58, 16, 12], "color": "#2d2a28" }, "restored": { "g": [14, 54, 16, 16], "color": "#f6e3a1" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 92, 100, 4], "color": "#8a5a2b" } }
+      ]
+    },
+    {
+      "id": "road_1", "name": "một đoạn đường", "unlock_at": 2, "origin": [-360, 306], "size": [108, 28],
+      "shapes": [
+        { "kind": "ellipse", "ruined": { "g": [54, 16, 24, 9], "color": "#4a3524" }, "restored": null },
+        { "kind": "ellipse", "ruined": { "g": [52, 18, 12, 4], "color": "#6c7f8cd0" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [0, 4, 40, 22], "color": "#6b6152" }, "restored": { "g": [0, 0, 56, 28], "color": "#d9b77a" } },
+        { "kind": "rect", "ruined": { "g": [68, 8, 40, 18], "color": "#5d5446" }, "restored": { "g": [52, 0, 56, 28], "color": "#d9b77a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 0, 108, 3], "color": "#b8935a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 25, 108, 3], "color": "#b8935a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [10, 12, 22, 4], "color": "#f0d9a0" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [44, 12, 22, 4], "color": "#f0d9a0" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [78, 12, 22, 4], "color": "#f0d9a0" } }
+      ]
+    },
+    {
+      "id": "house_2", "name": "một ngôi nhà", "unlock_at": 3, "origin": [-240, 196], "size": [100, 96],
+      "shapes": [
+        { "kind": "ellipse", "ruined": { "g": [46, 92, 52, 9], "color": "#4a3524" }, "restored": null },
+        { "kind": "ellipse", "ruined": { "g": [74, 95, 22, 6], "color": "#6c7f8cd0" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [8, 52, 84, 40], "color": "#6a5848" }, "restored": { "g": [8, 40, 84, 52], "color": "#d19a5c" } },
+        { "kind": "poly", "ruined": { "g": [38, 56, 66, 28, 96, 54], "color": "#4a4036" }, "restored": { "g": [0, 42, 50, 6, 100, 42], "color": "#e8bb45" } },
+        { "kind": "poly", "ruined": { "g": [4, 52, 24, 40, 28, 46, 8, 58], "color": "#3a2e24" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [40, 66, 20, 26], "color": "#3b2c20" }, "restored": { "g": [40, 60, 20, 32], "color": "#6b3f22" } },
+        { "kind": "rect", "ruined": { "g": [68, 62, 16, 10], "color": "#2d2a28" }, "restored": { "g": [68, 54, 16, 16], "color": "#f6e3a1" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 92, 100, 4], "color": "#8a5a2b" } }
+      ]
+    },
+    {
+      "id": "road_2", "name": "một đoạn đường", "unlock_at": 4, "origin": [-244, 306], "size": [108, 28],
+      "shapes": [
+        { "kind": "ellipse", "ruined": { "g": [52, 16, 22, 9], "color": "#4a3524" }, "restored": null },
+        { "kind": "ellipse", "ruined": { "g": [58, 15, 10, 4], "color": "#6c7f8cd0" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [0, 6, 34, 20], "color": "#6b6152" }, "restored": { "g": [0, 0, 56, 28], "color": "#d9b77a" } },
+        { "kind": "rect", "ruined": { "g": [72, 4, 36, 22], "color": "#5d5446" }, "restored": { "g": [52, 0, 56, 28], "color": "#d9b77a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 0, 108, 3], "color": "#b8935a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 25, 108, 3], "color": "#b8935a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [10, 12, 22, 4], "color": "#f0d9a0" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [44, 12, 22, 4], "color": "#f0d9a0" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [78, 12, 22, 4], "color": "#f0d9a0" } }
+      ]
+    },
+    {
+      "id": "house_3", "name": "một ngôi nhà", "unlock_at": 5, "origin": [-128, 196], "size": [100, 96],
+      "shapes": [
+        { "kind": "ellipse", "ruined": { "g": [50, 92, 54, 9], "color": "#4a3524" }, "restored": null },
+        { "kind": "ellipse", "ruined": { "g": [46, 95, 26, 6], "color": "#6c7f8cd0" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [8, 50, 84, 42], "color": "#725e4c" }, "restored": { "g": [8, 40, 84, 52], "color": "#c47f4a" } },
+        { "kind": "poly", "ruined": { "g": [2, 56, 30, 30, 50, 50], "color": "#4e4439" }, "restored": { "g": [0, 42, 50, 6, 100, 42], "color": "#f0c24d" } },
+        { "kind": "poly", "ruined": { "g": [60, 52, 90, 36, 94, 42, 66, 58], "color": "#3a2e24" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [40, 64, 20, 28], "color": "#3b2c20" }, "restored": { "g": [40, 60, 20, 32], "color": "#6b3f22" } },
+        { "kind": "rect", "ruined": { "g": [14, 60, 16, 10], "color": "#2d2a28" }, "restored": { "g": [14, 54, 16, 16], "color": "#f6e3a1" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 92, 100, 4], "color": "#8a5a2b" } }
+      ]
+    },
+    {
+      "id": "road_3", "name": "một đoạn đường", "unlock_at": 6, "origin": [-128, 306], "size": [108, 28],
+      "shapes": [
+        { "kind": "ellipse", "ruined": { "g": [56, 16, 26, 9], "color": "#4a3524" }, "restored": null },
+        { "kind": "ellipse", "ruined": { "g": [48, 17, 12, 4], "color": "#6c7f8cd0" }, "restored": null },
+        { "kind": "rect", "ruined": { "g": [0, 5, 42, 21], "color": "#6b6152" }, "restored": { "g": [0, 0, 56, 28], "color": "#d9b77a" } },
+        { "kind": "rect", "ruined": { "g": [70, 8, 38, 18], "color": "#5d5446" }, "restored": { "g": [52, 0, 56, 28], "color": "#d9b77a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 0, 108, 3], "color": "#b8935a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [0, 25, 108, 3], "color": "#b8935a" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [10, 12, 22, 4], "color": "#f0d9a0" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [44, 12, 22, 4], "color": "#f0d9a0" } },
+        { "kind": "rect", "ruined": null, "restored": { "g": [78, 12, 22, 4], "color": "#f0d9a0" } }
+      ]
+    }
+  ]
+}

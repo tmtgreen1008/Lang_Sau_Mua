@@ -1,0 +1,4 @@
+Reviewed-Content-Hash: assets/data/village_restoration.json e328a610ac6353c71e9304d8c301d8885c4577a1
+Reviewed-Content-Hash: src/gameplay/village/village_progress.gd 7481a2fce4ed05cd99d2236bc4675252d771055e
+Reviewed-Content-Hash: src/gameplay/village/village_view.gd b6fb4b434e69a1c1c8b45585b47fb67ccdb8479b
+Reviewed-Content-Hash: src/main.gd 80f9760a8963ae5c6fb2d79e26105033a507324c

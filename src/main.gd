@@ -21,6 +21,7 @@ const NEIGHBORS_PATH: String = "res://assets/data/neighbors.json"
 const NEIGHBOR_FIRST_GAP_X: float = 60.0
 const NEIGHBOR_SPACING_X: float = 100.0
 const NEIGHBOR_TOP: float = 370.0
+const VILLAGE_PATH: String = "res://assets/data/village_restoration.json"
 const GROUND_COLOR: Color = Color(0.45, 0.68, 0.38)
 
 ## Emitted when every request of a season is done (forwarded from NeighborBook; story 005).
@@ -52,6 +53,10 @@ var _dish_panel: DishPanel
 var _pending_neighbor: String = ""
 ## Season completed by the hand-over being processed, or "".
 var _just_completed_season: String = ""
+var _village: VillageProgress
+var _village_view: VillageView
+## HUD line about a restored village piece, waiting for the neighbor panel to close.
+var _village_text: String = ""
 ## False when a data file failed to load; input and clock are then skipped.
 var _initialised: bool = false
 ## True while the player walks to the stall to open the market.
@@ -74,9 +79,22 @@ func _ready() -> void:
 	_grid.crop_unlock_check = _book.is_crop_unlocked
 	var viewport_size: Vector2 = get_viewport_rect().size
 
-	_farm_view = FarmView.new()
-	_farm_view.position = Vector2(
+	var field_position := Vector2(
 			(viewport_size.x - FIELD_COLUMNS * FarmView.TILE_SIZE) * 0.5, FIELD_TOP)
+
+	# The village is added first so it is drawn behind the field, stall and neighbors.
+	_village = VillageProgress.new()
+	if not _village.load_from_file(VILLAGE_PATH):
+		push_error("Main: cannot load village data from %s; the game will not start." % VILLAGE_PATH)
+		return
+	_village.bind_book(_book)
+	_village_view = VillageView.new()
+	_village_view.position = field_position
+	add_child(_village_view)
+	_village_view.setup(_village)
+
+	_farm_view = FarmView.new()
+	_farm_view.position = field_position
 	add_child(_farm_view)
 	_farm_view.setup(_grid, _db)
 
@@ -125,6 +143,8 @@ func _ready() -> void:
 	_hud.dishes_requested.connect(_dish_panel.open)
 	_book.crop_unlocked.connect(_on_crop_unlocked)
 	_book.season_requests_completed.connect(_on_season_requests_completed)
+	_village.piece_restored.connect(_on_village_piece_restored)
+	_neighbor_panel.visibility_changed.connect(_on_neighbor_panel_visibility_changed)
 	_hud.sleep_requested.connect(_on_sleep_requested)
 	_grid.crop_harvested.connect(_on_crop_harvested)
 	_clock.phase_changed.connect(_on_phase_changed)
@@ -258,6 +278,8 @@ func _on_market_inventory_changed() -> void:
 
 func _on_hand_over_requested(neighbor_id: String) -> void:
 	_just_completed_season = ""
+	# The panel dims the map: let the village effect play once it is closed.
+	_village_view.effects_held = _neighbor_panel.is_open()
 	var request: Dictionary = _book.complete_request(neighbor_id, _grid.inventory)
 	if request.is_empty():
 		# Stale panel (nothing to hand over): resync it.
@@ -285,6 +307,23 @@ func _on_hand_over_requested(neighbor_id: String) -> void:
 
 func _on_crop_unlocked(_crop_id: String) -> void:
 	_hud.set_unlocked_crops(_book.get_unlocked_crops())
+
+
+func _on_village_piece_restored(piece_id: String) -> void:
+	_village_text = "Làng đã dựng lại thêm %s!" % _village.get_piece_name(piece_id)
+	if not _neighbor_panel.is_open():
+		_hud.show_message(_village_text)
+		_village_text = ""
+
+
+## Once the neighbor panel closes: play the held village effect and announce it.
+func _on_neighbor_panel_visibility_changed() -> void:
+	if _neighbor_panel.is_open():
+		return
+	_village_view.effects_held = false
+	if not _village_text.is_empty():
+		_hud.show_message(_village_text)
+		_village_text = ""
 
 
 func _on_season_requests_completed(season_id: String) -> void:

@@ -1,12 +1,12 @@
 # Story 005: Làng hồi sinh hiển thị
 
 > **Epic**: Làng Sau Mưa
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: [set by /dev-story when implementation begins]
+> **Last Updated**: 2026-10-26
 
 ## Context
 
@@ -56,10 +56,10 @@ N/A (minimal — no control manifest)
 
 ## Files
 
-- `src/presentation/village/` (quản lý diện mạo làng)
-- `assets/art/village/` (placeholder)
-
----
+- `assets/data/village_restoration.json`
+- `src/gameplay/village/village_progress.gd`
+- `src/gameplay/village/village_view.gd`
+- `src/main.gd` (village wiring)
 
 ## QA Test Cases
 
@@ -83,3 +83,12 @@ N/A (minimal — no control manifest)
 
 - Depends on: `production/epics/lang-sau-mua/story-004-neighbors-requests.md`
 - Unlocks: `production/epics/lang-sau-mua/story-006-save-load.md`
+
+---
+
+## Completion Notes
+**Completed**: 2026-10-26
+**Criteria**: 6/7 passing; AC-7 (smooth on a mid-range phone) DEFERRED — needs a real device, not measured
+**Deviations**: Advisory — restoration effect waits until the neighbor panel closes; level name stored but not shown; `reduce_motion` not hooked to any option; `bind_book` called twice would double-connect, a failed `load_from_file` leaves stale state; placeholder flat-colour art. Out of scope — `.godot/global_script_class_cache.cfg` (Godot-generated).
+**Test Evidence**: waived at qa.level minimal; screenshots in `production/qa/evidence/story-005-village-restoration/`, sign-off in `production/qa/evidence/story-005-village-restoration-evidence.md` (ticked by Claude at the developer's request)
+**Reviewed by**: self, no independent review
