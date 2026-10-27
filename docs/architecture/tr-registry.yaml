@@ -38,9 +38,233 @@
 #   line in any other shape is reported as unsupported layout, with its number.
 
 version: 1
-last_updated: ""
+last_updated: "2026-10-27"
 
-requirements: []
+requirements:
+- id: TR-time-001
+  system: time
+  gdd: design/gdd/time-system.md
+  requirement: "tick(delta) is driven from outside; the clock never reads the system clock"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-time-002
+  system: time
+  gdd: design/gdd/time-system.md
+  requirement: "Phases, days per season and seasons load from assets/data/time_config.json; invalid config fails safely (configure returns false)"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-time-003
+  system: time
+  gdd: design/gdd/time-system.md
+  requirement: "Day-change signals fire in order season, phase, day; Main wires the day signal to farm advance_day, HUD refresh and save"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-time-004
+  system: time
+  gdd: design/gdd/time-system.md
+  requirement: "A large delta (resume from background) or a panel being open must not skip days; intent: clock pauses with panels open and while the app is away"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-time-005
+  system: time
+  gdd: design/gdd/time-system.md
+  requirement: "Day number, phase index and elapsed seconds persist and restore clamped"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-farm-001
+  system: farm
+  gdd: design/gdd/farming-system.md
+  requirement: "5x4 cell grid; each cell stores state, crop id, days grown and watered flag"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-farm-002
+  system: farm
+  gdd: design/gdd/farming-system.md
+  requirement: "Crop data (name, growth_days, price, seasons, colour) loads from assets/data/crops.json via CropDatabase with validation"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-farm-003
+  system: farm
+  gdd: design/gdd/farming-system.md
+  requirement: "advance_day and current season are pushed into the farm by the clock via Main"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-farm-004
+  system: farm
+  gdd: design/gdd/farming-system.md
+  requirement: "Cells and inventory persist; a saved crop missing from data reverts the cell to hoed"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-farm-005
+  system: farm
+  gdd: design/gdd/farming-system.md
+  requirement: "Crop-unlock check is an injected Callable (crop_unlock_check), not a direct dependency on neighbors"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-player-001
+  system: player
+  gdd: design/gdd/player-system.md
+  requirement: "Touch and mouse input are both accepted; touch-emulated mouse events are ignored"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-player-002
+  system: player
+  gdd: design/gdd/player-system.md
+  requirement: "Movement is constant speed and frame-rate independent; speed read from data (not yet built)"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-player-003
+  system: player
+  gdd: design/gdd/player-system.md
+  requirement: "Map taps are ignored while a panel is open or the tap is on the HUD; routing rules live in main.gd"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-player-004
+  system: player
+  gdd: design/gdd/player-system.md
+  requirement: "Player paths around obstacles (houses, pond); intent, not built"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-market-001
+  system: market
+  gdd: design/gdd/market-system.md
+  requirement: "Money persists across save and load"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-market-002
+  system: market
+  gdd: design/gdd/market-system.md
+  requirement: "Sell prices come from crops.json, never hardcoded; negative prices clamp to 0"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-market-003
+  system: market
+  gdd: design/gdd/market-system.md
+  requirement: "Panel buttons are at least 72 px high; a dim layer blocks input behind panels"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-market-004
+  system: market
+  gdd: design/gdd/market-system.md
+  requirement: "Inventory and money changes emit signals that refresh the HUD"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-market-005
+  system: market
+  gdd: design/gdd/market-system.md
+  requirement: "Seed purchase and seasonal price factors come from data; intent, not built"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-neighbors-001
+  system: neighbors
+  gdd: design/gdd/neighbors-system.md
+  requirement: "neighbors.json loads with validation: quantity > 0, items exist, no level deadlock"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-neighbors-002
+  system: neighbors
+  gdd: design/gdd/neighbors-system.md
+  requirement: "Request state, unlocked crops and unlocked dishes persist"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-neighbors-003
+  system: neighbors
+  gdd: design/gdd/neighbors-system.md
+  requirement: "Village level is supplied by an injected provider (Callable) to break the neighbors/village cycle"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-neighbors-004
+  system: neighbors
+  gdd: design/gdd/neighbors-system.md
+  requirement: "request_completed signal on delivery; reward money is routed by Main, neighbors do not call the market"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-neighbors-005
+  system: neighbors
+  gdd: design/gdd/neighbors-system.md
+  requirement: "Requests accept any inventory item type (fish, cooked dishes, preserves); intent, not built"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-village-001
+  system: village
+  gdd: design/gdd/village-restoration.md
+  requirement: "Pieces and levels load from village_restoration.json with validation"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-village-002
+  system: village
+  gdd: design/gdd/village-restoration.md
+  requirement: "Completed-request count persists; load renders the village instantly with no effect"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-village-003
+  system: village
+  gdd: design/gdd/village-restoration.md
+  requirement: "Reveal effect is deferred while a panel is open; reduce-motion option makes it instant"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
+- id: TR-village-004
+  system: village
+  gdd: design/gdd/village-restoration.md
+  requirement: "Village progress is driven by neighbors request_completed"
+  created: 2026-10-27
+  revised: ""
+  status: active
+
 
 # --- EXAMPLE ENTRIES (remove when first real entries are added) ---
 #
