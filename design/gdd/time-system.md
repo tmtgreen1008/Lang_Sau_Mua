@@ -45,8 +45,8 @@ verified-by: To Truong
 ## 5. Edge Cases
 
 - `tick` với `delta ≤ 0`: bỏ qua.
-- `tick` với bước lớn hơn một ngày: lặp qua nhiều giai đoạn và nhiều ngày, phát đủ tín hiệu theo thứ tự. *Hiện tượng này sẽ xảy ra nếu ứng dụng quay lại từ nền mà không kẹp bước thời gian; chưa xác minh trên điện thoại.*
-- Cấu hình rỗng, giai đoạn có giây ≤ 0 hoặc mùa thiếu mã: nạp thất bại, `configure` trả về false.
+- `tick` với bước lớn: bước được kẹp ở `max_step_seconds` (dữ liệu, khởi điểm 0,25 giây) nên mỗi lần `tick` vượt tối đa một ranh giới giai đoạn; thời gian ứng dụng ở nền không bao giờ được cộng (ADR-0004). *Mã hiện tại chưa kẹp: một `delta` lớn lặp qua nhiều giai đoạn và nhiều ngày, phát đủ tín hiệu theo thứ tự và `Main` lưu mỗi ngày; hành vi của `delta` đầu tiên sau khi quay lại từ nền chưa xác minh trên điện thoại.*
+- Cấu hình rỗng, giai đoạn có giây ≤ 0 hoặc mùa thiếu mã: nạp thất bại; lỗi được ghi vào `DataResult` và `Main` hiện lỗi (ADR-0003: `configure(data, result)` không còn trả bool). *Mã hiện tại: `configure` trả `false`.*
 - Gọi `get_phase_id`, `get_season_id` trước khi nạp cấu hình: lỗi chỉ số (hiện `Main` dừng khởi động nếu nạp thất bại).
 - `from_dict`: số ngày < 1 thành 1; chỉ số giai đoạn bị kẹp vào khoảng hợp lệ; giây đã trôi ngoài khoảng hoặc NaN thành 0. Không phát tín hiệu.
 - Số ngày không có cận trên.

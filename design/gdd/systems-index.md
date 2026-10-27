@@ -121,7 +121,7 @@ Ghi chú: sáu GDD ở trạng thái `Designed` là tài liệu **reverse-docume
 | 9 | Gà vịt, mương, chợ hồi sinh | Alpha | Feature | game-designer, systems-designer | L |
 | 10 | Âm thanh | Full Vision | Polish | audio-director, sound-designer | M |
 
-Cốt truyện đứng đầu Vertical Slice vì nó ràng buộc câu cá và nấu ăn (mỗi hàng xóm dẫn vào một hệ thống). Mỗi hệ thống mới phải thêm phần vào bản lưu và nâng `FORMAT_VERSION` (ADR-0001).
+Cốt truyện đứng đầu Vertical Slice vì nó ràng buộc câu cá và nấu ăn (mỗi hàng xóm dẫn vào một hệ thống). Mỗi hệ thống mới phải thêm phần vào bản lưu và nâng `FORMAT_VERSION` (ADR-0001), kèm một hàm migrate, một file lưu mẫu đóng băng và bài kiểm nâng cấp (ADR-0005).
 
 ---
 

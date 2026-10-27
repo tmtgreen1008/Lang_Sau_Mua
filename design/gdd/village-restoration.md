@@ -48,8 +48,8 @@ Làng bắt đầu hoang tàn sau lũ và được dựng lại từng mảnh kh
 - Hoàn thành nhiều nhờ vả liền nhau trong lúc bảng đang mở: các mảnh được xếp hàng và chạy hiệu ứng sau khi đóng bảng.
 - Tải bản lưu: dựng ngay, không hiệu ứng, không thông báo.
 - Dữ liệu thiếu mảnh hoặc mức: nạp thất bại (không crash).
-- Trùng mã mảnh hoặc thiếu `unlock_at`: bỏ qua mảnh đó, ghi lỗi.
-- `bind_book` gọi hai lần sẽ nối tín hiệu hai lần (hiện chỉ gọi một lần).
+- Trùng mã mảnh hoặc thiếu `unlock_at`: lỗi chết, game không khởi động và hiện lỗi nêu mảnh (ADR-0003). *Mã hiện tại vẫn bỏ qua mảnh đó và chỉ ghi lỗi ra console; sẽ đổi khi cài ADR-0003.*
+- Ghép nối chỉ chạy một lần: `Main` nối `request_completed` của hàng xóm vào một hàm thuần của `VillageProgress` (ADR-0002); nối hai lần sẽ làm tín hiệu chạy hai lần. *Mã hiện tại vẫn dùng `bind_book` và sẽ bỏ nó khi cài ADR-0002.*
 - Số nhờ vả đã xong vượt số mảnh (hiện từ nhờ vả thứ 7 nếu có): không dựng thêm, không lỗi.
 
 ## 6. Dependencies

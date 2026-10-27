@@ -40,7 +40,7 @@
 #   unsupported layout, with its number.
 
 version: 1
-last_updated: ""
+last_updated: "2026-10-27"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -53,7 +53,39 @@ last_updated: ""
 # interface: how other systems access this state (read-only property, method call,
 #   signal, shared resource, etc.) — this is the contract other ADRs depend on.
 
-state_ownership: []
+state_ownership:
+  - state: game_config
+    status: active
+    owner_system: game-config
+    adr: docs/architecture/adr-0003-json-data-loading-and-validation.md
+    interface: "GameConfig typed getters, read-only after load; values come from assets/data/game_config.json; a missing required key is a load error, never a silent default"
+    write_access: game-config-only
+    referenced_by:
+      - docs/architecture/adr-0003-json-data-loading-and-validation.md
+    added: 2026-10-27
+    revised: ""
+
+  - state: clock_pause_state
+    status: active
+    owner_system: day-clock
+    adr: docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    interface: "DayClock.set_paused(source: StringName, paused: bool) and is_paused(); the clock stands while any of the sources panel, app_paused, app_focus, window_focus, player is set"
+    write_access: main-composition-root-only
+    referenced_by:
+      - docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    added: 2026-10-27
+    revised: ""
+
+  - state: save_file_set
+    status: active
+    owner_system: save-game
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    interface: "SaveGame.save(state), load_state(accept) -> LoadResult, backup_loaded_file(version), archive_for_new_game(); the files savegame.json, .tmp, .bak, v<N>.bak and the savegame.corrupt.<n>.* sets"
+    write_access: save-game-only
+    referenced_by:
+      - docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
+    revised: ""
 
 # Example:
 #
@@ -81,7 +113,97 @@ state_ownership: []
 #
 # pattern options: signal | direct_call | event_bus | shared_resource | rpc | none
 
-interfaces: []
+interfaces:
+  - contract: cross_module_effects
+    status: active
+    pattern: signal
+    producer: domain-modules
+    consumers:
+      - main-composition-root
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    signal_signature: "each domain module emits its own past-tense signals; only Main (or a feature composer) connects them and runs the cross-module handler named _on_<module>_<signal>"
+    referenced_by:
+      - docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+    revised: ""
+
+  - contract: view_refresh_after_load
+    status: active
+    pattern: direct_call
+    producer: main-composition-root
+    consumers:
+      - views-and-presentation-modules
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    signal_signature: "sync() -> void re-reads current state with no effects; every view implements it and Main._refresh_all() calls it after a save is loaded"
+    referenced_by:
+      - docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+    revised: ""
+
+  - contract: data_loading
+    status: active
+    pattern: direct_call
+    producer: data-loader
+    consumers:
+      - data-modules
+    adr: docs/architecture/adr-0003-json-data-loading-and-validation.md
+    signal_signature: "DataLoader.read_json(path) -> DataResult is the only JSON reader; each data module exposes configure(data: Dictionary, result: DataResult) -> void, which validates, fills itself and records every error and warning in result"
+    referenced_by:
+      - docs/architecture/adr-0003-json-data-loading-and-validation.md
+    added: 2026-10-27
+    revised: ""
+
+  - contract: cross_file_data_validation
+    status: active
+    pattern: direct_call
+    producer: data-validator
+    consumers:
+      - main-composition-root
+    adr: docs/architecture/adr-0003-json-data-loading-and-validation.md
+    signal_signature: "DataValidator.validate(crops, clock, book, village, config) -> DataResult is called by Main only when every file passed its own check; when skipped, the startup report says so and names the failing file"
+    referenced_by:
+      - docs/architecture/adr-0003-json-data-loading-and-validation.md
+    added: 2026-10-27
+    revised: ""
+
+  - contract: app_lifecycle_to_clock
+    status: active
+    pattern: direct_call
+    producer: main-composition-root
+    consumers:
+      - day-clock
+    adr: docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    signal_signature: "Main._notification maps APPLICATION_PAUSED/RESUMED to source app_paused, APPLICATION_FOCUS_OUT/IN to app_focus, WM_WINDOW_FOCUS_OUT/IN to window_focus (RESUMED clears all three); saves on PAUSED, FOCUS_OUT, WM_WINDOW_FOCUS_OUT and WM_CLOSE_REQUEST, skipping the write when the serialized state is unchanged; panel is recomputed from the panels every frame"
+    referenced_by:
+      - docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    added: 2026-10-27
+    revised: ""
+
+  - contract: save_load_result
+    status: active
+    pattern: direct_call
+    producer: save-game
+    consumers:
+      - main-composition-root
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    signal_signature: "SaveGame.load_state(accept: Callable) -> LoadResult with status OK, NO_SAVE, NEWER_VERSION, UNREADABLE, CORRUPT or RECOVERED; candidates are tried in the order .tmp, main, .bak; NEWER_VERSION and UNREADABLE stop the search; on NEWER_VERSION, UNREADABLE or CORRUPT Main disables autosave and keeps every file"
+    referenced_by:
+      - docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
+    revised: ""
+
+  - contract: save_format_migration
+    status: active
+    pattern: direct_call
+    producer: save-migrations
+    consumers:
+      - main-composition-root
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    signal_signature: "SaveMigrations.upgrade(root) runs pure migrate_vN_to_vN+1 functions in order on a copy and sets the new version after each step; a failing step applies nothing; every FORMAT_VERSION has a frozen fixture tests/fixtures/saves/v<N>.json that must upgrade to the current version in CI"
+    referenced_by:
+      - docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
+    revised: ""
 
 # Example:
 #
@@ -141,7 +263,61 @@ performance_budgets: []
 # Register an API decision when the choice is non-obvious and other ADRs might
 # make a different choice for the same purpose without knowing this was decided.
 
-api_decisions: []
+api_decisions:
+  - purpose: callable_injection
+    status: active
+    api: "member-function Callable, checked with is_valid() before use, with the meaning of a missing Callable stated per property"
+    not: "lambda that reassigns an outer local variable"
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    reason: "GDScript lambdas capture local variables by value (docs/engine-reference/godot/current-best-practices.md)"
+    referenced_by:
+      - docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+    revised: ""
+
+  - purpose: json_parsing
+    status: active
+    api: "JSON.new().parse(text) inside DataLoader, reading get_error_line() and get_error_message() after a failed parse"
+    not: "JSON.parse_string() for data files"
+    adr: docs/architecture/adr-0003-json-data-loading-and-validation.md
+    reason: "JSON.parse_string() returns only a Variant, so the caller gets no line or reason for a parse failure; SaveGame already uses JSON.new().parse() on 4.7.2"
+    referenced_by:
+      - docs/architecture/adr-0003-json-data-loading-and-validation.md
+    added: 2026-10-27
+    revised: ""
+
+  - purpose: clock_step_handling
+    status: active
+    api: "DayClock.tick(delta) clamps the step to max_step_seconds from time_config.json"
+    not: "clamping delta in each caller"
+    adr: docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    reason: "The invariant belongs to the module that owns the data, so every caller and every unit test gets it; the clamp also guarantees at most one phase boundary per tick"
+    referenced_by:
+      - docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    added: 2026-10-27
+    revised: ""
+
+  - purpose: day_speed_scaling
+    status: active
+    api: "DayClock.set_day_speed(mode) with factors from time_config.json"
+    not: "Engine.time_scale"
+    adr: docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    reason: "Engine.time_scale (from memory, unverified) scales the delta of everything else; day speed must change only the day clock"
+    referenced_by:
+      - docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    added: 2026-10-27
+    revised: ""
+
+  - purpose: save_write_procedure
+    status: active
+    api: "write savegame.tmp, read it back and compare with the written text, rotate the main file to savegame.bak, rename the tmp over the main file, restore the .bak on failure"
+    not: "writing directly onto the main file, or deleting savegame.bak after a successful save"
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    reason: "A durable .bak is the only way back when the main file is empty or corrupt after an OS-level power loss, because FileAccess.flush() is not an fsync (from memory, unverified)"
+    referenced_by:
+      - docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
+    revised: ""
 
 # Example:
 #
@@ -167,7 +343,83 @@ api_decisions: []
 # Register a pattern when an ADR explicitly bans it AND other ADRs might
 # unknowingly use it (i.e., it's a tempting but wrong approach for this project).
 
-forbidden_patterns: []
+forbidden_patterns:
+  - pattern: global_event_bus_or_autoload
+    status: active
+    description: "No autoload singleton and no global event bus for game state or game events. Modules emit their own signals and receive dependencies by injection."
+    why: "A global bus hides dependencies, makes modules hard to test in isolation and goes against the project's dependency-injection rule."
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+
+  - pattern: direct_cross_module_connect
+    status: active
+    description: "A domain module must not connect to another domain module's signals or call it directly, except through a dependency injected by Main (constructor argument or Callable)."
+    why: "Cross-module effects live in one place (Main or a feature composer) so interactions can be read and tested in one spot."
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+
+  - pattern: rewire_on_reset
+    status: active
+    description: "_build() and _wire() run exactly once at startup. A new game or a reload resets the existing modules; it never rebuilds and re-connects them."
+    why: "Re-running the wiring on reused objects connects every signal twice."
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+
+  - pattern: silent_startup_failure
+    status: active
+    description: "Main._ready() must not return silently when data loading or composition fails; it shows an error on a CanvasLayer and keeps _initialised false."
+    why: "A silent return leaves the player on a blank screen with no explanation."
+    adr: docs/architecture/adr-0002-composition-root-and-event-architecture.md
+    added: 2026-10-27
+
+  - pattern: hardcoded_gameplay_values
+    status: active
+    description: "No gameplay value (speeds, grid size, durations, prices) is hardcoded in src/; values come from the data files and GameConfig. Pixel layout constants are the exception until the display and UI ADRs decide them."
+    why: "Hardcoded values cannot be tuned without a code change and break the project's data-driven rule."
+    adr: docs/architecture/adr-0003-json-data-loading-and-validation.md
+    added: 2026-10-27
+
+  - pattern: silent_data_skip
+    status: active
+    description: "A data module must not skip an invalid entry and carry on without recording an error in DataResult."
+    why: "A skipped entry lets the game start with missing content, for example a request that asks for a crop that does not exist can never be completed."
+    adr: docs/architecture/adr-0003-json-data-loading-and-validation.md
+    added: 2026-10-27
+
+  - pattern: back_button_direct_quit
+    status: active
+    description: "The Android Back button (WM_GO_BACK_REQUEST) must not quit the app directly: it closes the top overlay, or opens the Pause panel when none is open."
+    why: "An accidental Back press must not end the session; this fits the pillar of a warm, pressure-free game."
+    adr: docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    added: 2026-10-27
+
+  - pattern: wall_clock_catch_up
+    status: active
+    description: "Game time must not be advanced by system-clock time or by time spent in the background; there is no offline progress, and DayClock never reads the system clock."
+    why: "The confirmed design intent is that nothing is lost while the player is away; it also keeps the clock deterministic and testable."
+    adr: docs/architecture/adr-0004-clock-and-app-lifecycle.md
+    added: 2026-10-27
+
+  - pattern: destructive_action_on_load
+    status: active
+    description: "Loading a save must not rename or delete any save file. Renames and deletions happen only after the player explicitly chooses a new game (archive_for_new_game)."
+    why: "A load that renames a file turns a transient read error or a save from a newer game into permanent loss."
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
+
+  - pattern: overwrite_unreadable_or_newer_save
+    status: active
+    description: "A save that is unreadable, corrupt with no usable fallback, or written by a newer FORMAT_VERSION must never be overwritten or rotated. Autosave stays off, and SaveGame.save() refuses, until the player chooses a new game."
+    why: "Silently starting a new game over an unreadable save destroys the player's progress."
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
+
+  - pattern: format_change_without_migration
+    status: active
+    description: "Changing the shape of a saved section (adding, removing, renaming or retyping a required key or section, or changing the meaning of a value) requires bumping FORMAT_VERSION, a pure migrate function and a new frozen fixture with an upgrade test."
+    why: "Without them every existing save becomes unreadable for the next version of the game."
+    adr: docs/architecture/adr-0005-save-versioning-and-write-durability.md
+    added: 2026-10-27
 
 # Example:
 #

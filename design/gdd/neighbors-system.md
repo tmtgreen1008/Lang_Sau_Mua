@@ -53,8 +53,8 @@ Ba hàng xóm đứng trên bản đồ. Mỗi người có một chuỗi nhờ 
 - Hàng xóm đã hết nhờ vả: không còn nhờ vả hiện tại, hiện lời cảm ơn.
 - Nộp từ bảng cũ (túi đã đổi): nộp thất bại thì làm mới bảng, không đổi gì.
 - Tải bản lưu: bỏ qua mã nhờ vả, cây, món ăn không còn trong dữ liệu; cây khởi đầu luôn mở; không phát tín hiệu.
-- Nhờ vả đòi cây không có trong dữ liệu cây: không thể hoàn thành (chưa kiểm tra lúc nạp, rủi ro đã nêu).
-- Số lượng yêu cầu ≤ 0 trong dữ liệu: chưa kiểm tra lúc nạp (số âm sẽ làm túi tăng khi nộp).
+- Nhờ vả đòi cây không có trong dữ liệu cây: lỗi chết khi nạp, do bộ kiểm chéo bắt (ADR-0003); game không khởi động và hiện lỗi nêu nhờ vả và cây. *Mã hiện tại chưa kiểm; nhờ vả như vậy không thể hoàn thành.*
+- Số lượng yêu cầu ≤ 0 hoặc không phải số nguyên trong dữ liệu: lỗi chết khi nạp (ADR-0003). *Mã hiện tại chưa kiểm (số âm sẽ làm túi tăng khi nộp).*
 - Nhờ vả "mùa thu" cần cà chua mà cà chua chỉ gieo mùa hạ: người chơi phải để dành (xem Open Questions).
 - Không giới hạn thời gian cho nhờ vả; không hết hạn.
 

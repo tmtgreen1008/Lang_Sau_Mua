@@ -39,7 +39,7 @@ Lưới ô ruộng 5×4 nơi người chơi cuốc, gieo, tưới và thu hoạc
 
 ## 4. Formulas
 
-- **Chín:** `chín = (trạng thái == Đã gieo) và (ngày_đã_lớn ≥ growth_days)`. `growth_days` là số nguyên ≥ 1 (bộ nạp dữ liệu loại cây có giá trị ≤ 0). Hiện: cải xanh 2, cà chua 3, ngô 4.
+- **Chín:** `chín = (trạng thái == Đã gieo) và (ngày_đã_lớn ≥ growth_days)`. `growth_days` là số nguyên ≥ 1 (giá trị ≤ 0 hoặc không nguyên là lỗi chết khi nạp, ADR-0003; mã hiện tại chỉ bỏ qua loại cây đó). Hiện: cải xanh 2, cà chua 3, ngô 4.
 - **Tiến độ:** `tiến_độ = clamp(ngày_đã_lớn ÷ growth_days, 0, 1)`. Dùng để vẽ.
 - **Gieo được theo mùa:** `được = cây có trong danh sách mùa của loại cây, hoặc chưa đặt mùa`.
 - **Giá trị mỗi ô-ngày (suy ra để cân bằng, mã không tính):** `giá_bán ÷ growth_days` = 7,5 (cải xanh, giá 15), 10 (cà chua, giá 30), 12,5 (ngô, giá 50).
