@@ -61,6 +61,8 @@ var _village_text: String = ""
 var _save_game: SaveGame = SaveGame.new()
 ## "data" of the save accepted by _accept_save, already upgraded to the current format.
 var _upgraded_data: Dictionary = {}
+## JSON of the state last written successfully; an identical state is not written again.
+var _last_saved_state: String = ""
 ## False when a data file failed to load; input and clock are then skipped.
 var _initialised: bool = false
 ## True while the player walks to the stall to open the market.
@@ -179,8 +181,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_tap(canvas_position: Vector2) -> void:
-	if _market_panel.is_open() or _neighbor_panel.is_open() or _dish_panel.is_open() \
-			or _hud.blocks_point(canvas_position):
+	if _any_panel_open() or _hud.blocks_point(canvas_position):
 		return
 	_pending_neighbor = ""
 	for neighbor_id: String in _neighbor_views:
@@ -231,26 +232,73 @@ func _on_player_arrived() -> void:
 			_hud.show_message(str(FAIL_MESSAGES[tool]))
 
 
-## Autosave when the app goes to the background, loses focus or is asked to close.
+## App lifecycle (ADR-0004 rule 5). Leaving the foreground stops the clock and saves; coming
+## back restarts it. Each notification family has its own pause source because the order they
+## arrive in on a phone is not known; RESUMED means "in the foreground" and clears the app
+## sources as a safety net. The panel source is not touched here (see _process).
 func _notification(what: int) -> void:
 	match what:
-		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, \
-		NOTIFICATION_WM_WINDOW_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST:
+		NOTIFICATION_APPLICATION_PAUSED:
+			_clock.set_paused(DayClock.PAUSE_APP, true)
 			save_game()
+		NOTIFICATION_APPLICATION_RESUMED:
+			_clock.set_paused(DayClock.PAUSE_APP, false)
+			_clock.set_paused(DayClock.PAUSE_FOCUS, false)
+			_clock.set_paused(DayClock.PAUSE_WINDOW, false)
+		NOTIFICATION_APPLICATION_FOCUS_OUT:
+			_clock.set_paused(DayClock.PAUSE_FOCUS, true)
+			save_game()
+		NOTIFICATION_APPLICATION_FOCUS_IN:
+			_clock.set_paused(DayClock.PAUSE_FOCUS, false)
+		NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+			_clock.set_paused(DayClock.PAUSE_WINDOW, true)
+			save_game()
+		NOTIFICATION_WM_WINDOW_FOCUS_IN:
+			_clock.set_paused(DayClock.PAUSE_WINDOW, false)
+		NOTIFICATION_WM_CLOSE_REQUEST:
+			save_game()
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			_on_back_requested()
+
+
+## The Back button never quits the app (ADR-0004 rule 7; the project setting
+## application/config/quit_on_go_back is off): it closes the open panel. Opening the pause
+## panel when nothing is open waits for the UI ADR.
+func _on_back_requested() -> void:
+	if not _initialised:
+		return
+	for panel: Variant in [_dish_panel, _neighbor_panel, _market_panel]:
+		if panel.is_open():
+			panel.close()
+			return
 
 
 ## Writes the whole game state to the save file. Returns false when nothing was written
-## (also before the game finished starting, so a failed start never overwrites a save).
+## (also before the game finished starting, so a failed start never overwrites a save, and
+## while SaveGame blocks writing). Returns true without writing when the state is identical
+## to the last successful write, so back-to-back lifecycle saves do not rotate the backup.
 func save_game() -> bool:
 	if not _initialised:
 		return false
-	return _save_game.save({
+	var state: Dictionary = {
 		"farm": _grid.to_dict(),
 		"clock": _clock.to_dict(),
 		"market": _market.to_dict(),
 		"neighbors": _book.to_dict(),
 		"village": _village.to_dict(),
-	})
+	}
+	var fingerprint: String = JSON.stringify(state)
+	if fingerprint == _last_saved_state:
+		return true
+	if not _save_game.save(state):
+		return false
+	_last_saved_state = fingerprint
+	return true
+
+
+## True while any panel that covers the map is open (market, neighbors, dishes).
+func _any_panel_open() -> bool:
+	return _market_panel.is_open() or _neighbor_panel.is_open() or _dish_panel.is_open()
 
 
 ## Startup: applies the last save if there is one. A save the game cannot use is left exactly
@@ -307,9 +355,12 @@ func _accept_save(root: Dictionary) -> String:
 	return ""
 
 
+## The panel pause source is recomputed every frame from the panels themselves, so there is
+## no state to forget to clear (ADR-0004 rule 9).
 func _process(delta: float) -> void:
 	if not _initialised:
 		return
+	_clock.set_paused(DayClock.PAUSE_PANEL, _any_panel_open())
 	_clock.tick(delta)
 
 
@@ -317,7 +368,10 @@ func _refresh_time_hud() -> void:
 	_hud.set_time_info(_clock.day_number, _clock.get_phase_name(), _clock.get_season_name())
 
 
+## DayClock.sleep() ignores pause, so a panel being open has to be checked here.
 func _on_sleep_requested() -> void:
+	if _any_panel_open():
+		return
 	_clock.sleep()
 
 

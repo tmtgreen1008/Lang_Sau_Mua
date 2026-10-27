@@ -47,6 +47,8 @@ static func snapshot(dir: String) -> Dictionary:
 
 ## Deletes [param dir] and everything in it (files and one level of folders).
 static func remove_dir(dir: String) -> void:
+	if not DirAccess.dir_exists_absolute(dir):
+		return
 	for file_name: String in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + file_name)
 	for folder_name: String in DirAccess.get_directories_at(dir):

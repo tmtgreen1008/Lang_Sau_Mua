@@ -42,6 +42,9 @@ godot --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin
 Run the import first: a fresh clone has no `.godot/` class cache, and a run
 without one exits 1 because `GdUnitCmdTool.gd` fails to load, so no test ran.
 
+gdUnit4 stops a suite at its first failure. Add `-c` (before `--ignoreHeadlessMode`) to run
+every test and see all failures, for example while writing tests first.
+
 Exit codes: **0** all pass, **100** a test failed, **101** all passed but a test
 leaked nodes (a warning, not a failure), **103/104** gdUnit4 could not run,
 **105** a test script does not parse. A run that prints `No test cases found`
