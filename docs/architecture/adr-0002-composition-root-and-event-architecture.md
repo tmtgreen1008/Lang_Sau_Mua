@@ -1,7 +1,7 @@
 # ADR-0002: Gốc ghép nối và kiến trúc sự kiện
 
 ## Status
-Proposed
+Accepted
 
 ## Date
 2026-10-27

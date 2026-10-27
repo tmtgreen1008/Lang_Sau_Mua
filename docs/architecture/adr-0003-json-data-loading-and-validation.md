@@ -1,7 +1,7 @@
 # ADR-0003: Nạp và kiểm tra dữ liệu JSON
 
 ## Status
-Proposed
+Accepted
 
 ## Date
 2026-10-27
