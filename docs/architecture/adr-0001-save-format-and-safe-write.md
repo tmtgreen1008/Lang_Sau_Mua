@@ -15,7 +15,11 @@ verified-by: To Truong
 
 ## Status
 
-**Proposed** (reverse-documented, 2026-10-27). Chưa Accepted: các story tham chiếu một ADR còn Proposed sẽ bị chặn, nên khi dùng làm căn cứ hãy chuyển sang Accepted bằng `/architecture-decision`.
+**Accepted** (2026-10-27, bởi To Truong; trước đó Proposed, reverse-documented cùng ngày).
+
+## Date
+
+2026-10-27
 
 ## Context
 
@@ -115,4 +119,5 @@ Chưa có ADR khác. Các quyết định nên viết tiếp: nội dung dữ li
 
 | Ngày | Thay đổi |
 |---|---|
+| 2026-10-27 | Chuyển sang Accepted (không có story nào đang bị chặn chờ ADR này). |
 | 2026-10-27 | Bản đầu, reverse-documented ở commit `047ad69`. Bốn ý định đã xác nhận: giữ JSON không chống sửa (đã cài), nâng cấp phiên bản từng bước không đè bản mới (chưa cài), sao lưu Android sau này (chưa làm), ghi đồng bộ đo lại khi file lớn (chưa đo). |
