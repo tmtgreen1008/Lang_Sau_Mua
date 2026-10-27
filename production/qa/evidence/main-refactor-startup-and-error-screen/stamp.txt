@@ -1,0 +1,9 @@
+Reviewed-Content-Hash: src/main.gd 073cfd3d80780137ebde93cb124a31e1b9552eb4
+Reviewed-Content-Hash: src/ui/startup_error_screen.gd 7277c09efa5b1134b90cff90459074b176fc232c
+Reviewed-Content-Hash: src/ui/hud.gd 237e51938ead5a19230a7fa68c030b824cb62daf
+Reviewed-Content-Hash: src/gameplay/farming/farm_view.gd cbb1a74269b4bccbc274534a5caea97a84628be5
+Reviewed-Content-Hash: src/gameplay/village/village_view.gd 9e43e1664437cabee81fc93e2a2788b089c1fd75
+Reviewed-Content-Hash: src/gameplay/player/player.gd cf72496fe87e8eceefd617ef8a2db9c2c386ecf6
+Reviewed-Content-Hash: src/core/data/data_validator.gd ab940ac36d49801993e7e6090a6825270f9fed17
+Reviewed-Content-Hash: src/core/data/game_config.gd 9fbb548407fbbdfb75dade36b92d7728f310a61c
+Reviewed-Content-Hash: tests/unit/ui/startup_error_screen_test.gd 7a2f3b3a089d0500c13c81f8888ab5761d1538fa
