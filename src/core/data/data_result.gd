@@ -47,3 +47,22 @@ func add_warning(where: String, message: String) -> void:
 		dropped_warnings += 1
 		return
 	warnings.append("%s: %s" % [where, message])
+
+
+## Appends every error and warning of [param other] (already formatted) after this result's
+## own, keeping the [constant MAX_ENTRIES] cap: what does not fit, and what [param other] had
+## already dropped, is only counted. [member data] is not copied. Main uses this to gather the
+## results of every data file into one.
+func absorb(other: DataResult) -> void:
+	for line: String in other.errors:
+		if errors.size() >= MAX_ENTRIES:
+			dropped_errors += 1
+		else:
+			errors.append(line)
+	dropped_errors += other.dropped_errors
+	for line: String in other.warnings:
+		if warnings.size() >= MAX_ENTRIES:
+			dropped_warnings += 1
+		else:
+			warnings.append(line)
+	dropped_warnings += other.dropped_warnings

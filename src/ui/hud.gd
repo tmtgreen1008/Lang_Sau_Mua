@@ -5,7 +5,7 @@ extends CanvasLayer
 ## knows no farm or clock rules.
 ##
 ## Usage:
-##   hud.setup(db)
+##   hud.setup(db, config)
 ##   hud.sleep_requested.connect(clock.sleep)
 ##   hud.set_time_info(1, "Sáng", "Mùa hạ")
 ##   hud.set_inventory(grid.inventory)
@@ -18,7 +18,6 @@ signal dishes_requested
 const MIN_BUTTON_SIZE: Vector2 = Vector2(120.0, 72.0)
 const FONT_SIZE: int = 24
 const TIME_FONT_SIZE: int = 36
-const MESSAGE_SECONDS: float = 2.5
 const MESSAGE_WIDTH: float = 320.0
 const MESSAGE_POSITION: Vector2 = Vector2(16.0, 140.0)
 const TOOL_NAMES: Dictionary = {
@@ -32,6 +31,8 @@ const TOOL_NAMES: Dictionary = {
 var current_tool: FarmGrid.Tool = FarmGrid.Tool.HOE
 ## Crop currently selected in the crop selector ("" if none).
 var current_crop_id: String = ""
+## How long a message stays visible, in seconds. From GameConfig through setup(); 0 until then.
+var message_seconds: float = 0.0
 
 var _db: CropDatabase
 var _crop_row: HBoxContainer
@@ -47,9 +48,10 @@ var _message_tween: Tween
 var _interactive: Array[Control] = []
 
 
-## Builds the UI for the crops in [param db].
-func setup(db: CropDatabase) -> void:
+## Builds the UI for the crops in [param db]; the message time comes from [param config].
+func setup(db: CropDatabase, config: GameConfig) -> void:
 	_db = db
+	message_seconds = config.message_seconds()
 	var root := VBoxContainer.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
@@ -166,7 +168,7 @@ func show_message(text: String) -> void:
 	if _message_tween != null:
 		_message_tween.kill()
 	_message_tween = create_tween()
-	_message_tween.tween_interval(MESSAGE_SECONDS)
+	_message_tween.tween_interval(message_seconds)
 	_message_tween.tween_callback(func() -> void: _message_label.text = "")
 
 

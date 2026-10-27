@@ -42,18 +42,19 @@ func test_shipped_data_is_not_empty() -> void:
 
 
 func test_shipped_game_config_keeps_the_values_that_were_written_in_the_code() -> void:
-	# Arrange: ADR-0003 rule 8 moves these numbers out of the code without changing them. The
-	# check reads the constants still in the code, and goes when the code stops having them.
+	# Arrange: ADR-0003 rule 8 moved these numbers out of the code without changing them. They
+	# are written here as the values the game shipped with; changing one in game_config.json is a
+	# deliberate balance change and updates this test with it.
 	var config: GameConfig = _load_all(DataResult.new())["config"] as GameConfig
 
 	# Act / Assert
 	assert_bool(config.is_configured()).is_true()
-	assert_float(config.player_speed()).is_equal(Player.SPEED)
-	assert_float(config.player_radius()).is_equal(Player.RADIUS)
-	assert_int(config.field_columns()).is_equal(Main.FIELD_COLUMNS)
-	assert_int(config.field_rows()).is_equal(Main.FIELD_ROWS)
-	assert_float(config.tile_size()).is_equal(FarmView.TILE_SIZE)
-	assert_float(config.message_seconds()).is_equal(Hud.MESSAGE_SECONDS)
+	assert_float(config.player_speed()).is_equal(360.0)
+	assert_float(config.player_radius()).is_equal(18.0)
+	assert_int(config.field_columns()).is_equal(5)
+	assert_int(config.field_rows()).is_equal(4)
+	assert_float(config.tile_size()).is_equal(80.0)
+	assert_float(config.message_seconds()).is_equal(2.5)
 
 
 func test_load_from_file_wrappers_accept_the_shipped_files() -> void:

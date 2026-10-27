@@ -107,6 +107,15 @@ func configure(data: Dictionary, result: DataResult) -> void:
 	_reset_progress()
 
 
+## How many requests are done, over all neighbors (what Main tells the village).
+func get_completed_count() -> int:
+	var done: int = 0
+	for request_id: String in _states:
+		if _states[request_id] == STATE_DONE:
+			done += 1
+	return done
+
+
 ## Crops plantable from the start of the game (ids), in file order.
 func get_start_crops() -> Array[String]:
 	return _start_crops.duplicate()

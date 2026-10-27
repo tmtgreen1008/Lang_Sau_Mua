@@ -69,6 +69,22 @@ static func village() -> Dictionary:
 	}
 
 
+## Gameplay numbers that differ from the shipped file, so a test cannot pass by reading the real one.
+static func game_config() -> Dictionary:
+	return {
+		"player": {"speed": 300.0, "radius": 12.5},
+		"field": {"columns": 6, "rows": 3, "tile_size": 64.0},
+		"hud": {"message_seconds": 1.5},
+	}
+
+
+## A GameConfig already configured from [method game_config].
+static func make_game_config() -> GameConfig:
+	var config := GameConfig.new()
+	config.configure(game_config(), DataResult.new())
+	return config
+
+
 ## The request Dictionary at [param request_index] of the neighbor at [param neighbor_index].
 static func request(data: Dictionary, neighbor_index: int, request_index: int) -> Dictionary:
 	var neighbor: Dictionary = (data["neighbors"] as Array)[neighbor_index] as Dictionary

@@ -7,21 +7,15 @@ extends Node2D
 ## Tapping a field tile walks the player there and applies the selected tool on
 ## arrival; tapping elsewhere just walks.
 
-const CROPS_PATH: String = "res://assets/data/crops.json"
-const TIME_CONFIG_PATH: String = "res://assets/data/time_config.json"
-const FIELD_COLUMNS: int = 5
-const FIELD_ROWS: int = 4
 const FIELD_TOP: float = 128.0
 ## The market stall sits this far right of the field, at this height.
 const STALL_GAP_X: float = 60.0
 const STALL_TOP: float = 190.0
-const NEIGHBORS_PATH: String = "res://assets/data/neighbors.json"
 ## Neighbors stand in a row below the stall, right of the field: clear of the field,
 ## the stall and the bottom HUD rows on the 1152x648 base (and any wider viewport).
 const NEIGHBOR_FIRST_GAP_X: float = 60.0
 const NEIGHBOR_SPACING_X: float = 100.0
 const NEIGHBOR_TOP: float = 370.0
-const VILLAGE_PATH: String = "res://assets/data/village_restoration.json"
 const GROUND_COLOR: Color = Color(0.45, 0.68, 0.38)
 
 ## Emitted when every request of a season is done (forwarded from NeighborBook; story 005).
@@ -35,6 +29,10 @@ const FAIL_MESSAGES: Dictionary = {
 	FarmGrid.Tool.HARVEST: "Chưa có cây chín để thu hoạch.",
 }
 
+## Folder the data files are read from. Test seam: tests point it at a copy they can break;
+## it must be set before the node enters the tree, because _ready() loads the data.
+var _data_dir: String = DataPaths.DEFAULT_DIR
+var _config: GameConfig = GameConfig.new()
 var _db: CropDatabase = CropDatabase.new()
 var _clock: DayClock = DayClock.new()
 var _grid: FarmGrid
@@ -53,7 +51,7 @@ var _dish_panel: DishPanel
 var _pending_neighbor: String = ""
 ## Season completed by the hand-over being processed, or "".
 var _just_completed_season: String = ""
-var _village: VillageProgress
+var _village: VillageProgress = VillageProgress.new()
 var _village_view: VillageView
 ## HUD line about a restored village piece, waiting for the neighbor panel to close.
 var _village_text: String = ""
@@ -71,29 +69,70 @@ var _pending_stall: bool = false
 var _pending_cell: Vector2i = FarmView.INVALID_CELL
 
 
+## Startup (ADR-0002 rule 9 and 12): build once, wire once, then load the save. A data problem
+## stops here with a message on screen; nothing is built, ticked or saved.
 func _ready() -> void:
-	if not _db.load_from_file(CROPS_PATH):
-		push_error("Main: cannot load crop data from %s; the game will not start." % CROPS_PATH)
+	if not _build():
 		return
-	if not _clock.load_from_file(TIME_CONFIG_PATH):
-		push_error("Main: cannot load time config from %s; the game will not start." % TIME_CONFIG_PATH)
-		return
-	if not _book.load_from_file(NEIGHBORS_PATH):
-		push_error("Main: cannot load neighbor data from %s; the game will not start." % NEIGHBORS_PATH)
-		return
-	_grid = FarmGrid.new(_db, FIELD_COLUMNS, FIELD_ROWS)
-	_grid.crop_unlock_check = _book.is_crop_unlocked
-	var viewport_size: Vector2 = get_viewport_rect().size
+	_wire()
+	_load_saved_game()
+	_initialised = true
 
-	var field_position := Vector2(
-			(viewport_size.x - FIELD_COLUMNS * FarmView.TILE_SIZE) * 0.5, FIELD_TOP)
+
+## Reads and checks every data file, then builds the modules and nodes. Returns false (after
+## showing the startup error screen) when the data is wrong. Runs once.
+func _build() -> bool:
+	var problems: DataResult = _load_data()
+	for line: String in problems.warnings:
+		push_warning("Main: %s" % line)
+	if not problems.ok():
+		_show_startup_error(problems)
+		return false
+	_build_world()
+	return true
+
+
+## Reads the five data files into their modules. Every file is checked on its own and every
+## problem is gathered; the cross-file check only runs when all of them passed, and says so
+## when it was skipped (a silent skip would read as "nothing found").
+func _load_data() -> DataResult:
+	var problems := DataResult.new()
+	var targets: Array[Array] = [[DataPaths.CROPS, _db], [DataPaths.TIME_CONFIG, _clock],
+			[DataPaths.NEIGHBORS, _book], [DataPaths.VILLAGE, _village],
+			[DataPaths.GAME_CONFIG, _config]]
+	var failed: Array[String] = []
+	for target: Array in targets:
+		var file_name: String = target[0]
+		var read: DataResult = DataLoader.read_json(DataPaths.path(file_name, _data_dir))
+		if read.ok():
+			(target[1] as Object).call("configure", read.data, read)
+		if not read.ok():
+			failed.append(file_name)
+		problems.absorb(read)
+	if failed.is_empty():
+		problems.absorb(DataValidator.new().validate(_db, _clock, _book, _village))
+	else:
+		problems.errors.push_front("Lưu ý: kiểm chéo bị bỏ qua vì %s lỗi, nên chưa kiểm được quan hệ giữa các file." % ", ".join(failed))
+	return problems
+
+
+func _show_startup_error(problems: DataResult) -> void:
+	var screen := StartupErrorScreen.new()
+	add_child(screen)
+	screen.show_errors(problems.errors, problems.dropped_errors)
+
+
+## Creates the field, the people and the interface from the checked data. No signal is
+## connected here; that is _wire().
+func _build_world() -> void:
+	_grid = FarmGrid.new(_db, _config.field_columns(), _config.field_rows())
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var tile_size: float = _config.tile_size()
+	var field_width: float = _config.field_columns() * tile_size
+
+	var field_position := Vector2((viewport_size.x - field_width) * 0.5, FIELD_TOP)
 
 	# The village is added first so it is drawn behind the field, stall and neighbors.
-	_village = VillageProgress.new()
-	if not _village.load_from_file(VILLAGE_PATH):
-		push_error("Main: cannot load village data from %s; the game will not start." % VILLAGE_PATH)
-		return
-	_village.bind_book(_book)
 	_village_view = VillageView.new()
 	_village_view.position = field_position
 	add_child(_village_view)
@@ -102,20 +141,20 @@ func _ready() -> void:
 	_farm_view = FarmView.new()
 	_farm_view.position = field_position
 	add_child(_farm_view)
-	_farm_view.setup(_grid, _db)
+	_farm_view.setup(_grid, _db, _config)
 
 	_player = Player.new()
-	_player.position = Vector2(viewport_size.x * 0.5, FIELD_TOP + FIELD_ROWS * FarmView.TILE_SIZE + 24.0)
+	_player.position = Vector2(viewport_size.x * 0.5,
+			FIELD_TOP + _config.field_rows() * tile_size + 24.0)
 	add_child(_player)
-	_player.arrived.connect(_on_player_arrived)
+	_player.setup(_config)
 
 	_market = Market.new(_grid, _db)
 	_stall = MarketStallView.new()
-	_stall.position = Vector2(
-			_farm_view.position.x + FIELD_COLUMNS * FarmView.TILE_SIZE + STALL_GAP_X, STALL_TOP)
+	_stall.position = Vector2(_farm_view.position.x + field_width + STALL_GAP_X, STALL_TOP)
 	add_child(_stall)
 
-	var field_right: float = _farm_view.position.x + FIELD_COLUMNS * FarmView.TILE_SIZE
+	var field_right: float = _farm_view.position.x + field_width
 	var slot: int = 0
 	for neighbor_id: String in _book.get_neighbor_ids():
 		var view := NeighborView.new()
@@ -128,38 +167,46 @@ func _ready() -> void:
 
 	_hud = Hud.new()
 	add_child(_hud)
-	_hud.setup(_db)
+	_hud.setup(_db, _config)
 	_hud.set_unlocked_crops(_book.get_unlocked_crops())
 	_hud.set_inventory(_grid.inventory)
 	_hud.set_money(_market.money)
-	_market.money_changed.connect(_hud.set_money)
-	_market.inventory_changed.connect(_on_market_inventory_changed)
 
 	_market_panel = MarketPanel.new()
 	add_child(_market_panel)
 	_market_panel.setup(_db)
-	_market_panel.sell_requested.connect(_on_sell_requested)
 	_neighbor_panel = NeighborPanel.new()
 	add_child(_neighbor_panel)
 	_neighbor_panel.setup(_db, _book)
-	_neighbor_panel.hand_over_requested.connect(_on_hand_over_requested)
 	_dish_panel = DishPanel.new()
 	add_child(_dish_panel)
 	_dish_panel.setup(_book)
+
+
+## Every connection between modules, injected query and starting display. Runs once: "new game"
+## and reloading a save reset the modules with from_dict instead, so nothing is connected
+## twice. The order of the clock handlers is the order of the signals' emission by DayClock
+## (season, phase, day), so the connect order here is not significant between signals.
+func _wire() -> void:
+	_grid.crop_unlock_check = _book.is_crop_unlocked
+	_player.arrived.connect(_on_player_arrived)
+	_market.money_changed.connect(_hud.set_money)
+	_market.inventory_changed.connect(_on_market_inventory_changed)
+	_market_panel.sell_requested.connect(_on_sell_requested)
+	_neighbor_panel.hand_over_requested.connect(_on_hand_over_requested)
+	_neighbor_panel.visibility_changed.connect(_on_neighbor_panel_visibility_changed)
 	_hud.dishes_requested.connect(_dish_panel.open)
+	_hud.sleep_requested.connect(_on_sleep_requested)
 	_book.crop_unlocked.connect(_on_crop_unlocked)
+	_book.request_completed.connect(_on_book_request_completed)
 	_book.season_requests_completed.connect(_on_season_requests_completed)
 	_village.piece_restored.connect(_on_village_piece_restored)
-	_neighbor_panel.visibility_changed.connect(_on_neighbor_panel_visibility_changed)
-	_hud.sleep_requested.connect(_on_sleep_requested)
 	_grid.crop_harvested.connect(_on_crop_harvested)
 	_clock.phase_changed.connect(_on_phase_changed)
 	_clock.season_changed.connect(_on_season_changed)
 	_clock.day_advanced.connect(_on_day_advanced)
 	_grid.current_season = _clock.get_season_id()
 	_refresh_time_hud()
-	_load_saved_game()
-	_initialised = true
 
 
 func _draw() -> void:
@@ -441,6 +488,11 @@ func _on_hand_over_requested(neighbor_id: String) -> void:
 	_hud.show_message(reward_text)
 	_neighbor_panel.show_result("%s\n%s" % [str(request.get("done_text", "")), reward_text])
 	save_game()
+
+
+## The village counts requests through Main; it does not know the neighbor book.
+func _on_book_request_completed(_neighbor_id: String, _request_id: String, _money: int) -> void:
+	_village.on_request_completed(_book.get_completed_count())
 
 
 func _on_crop_unlocked(_crop_id: String) -> void:

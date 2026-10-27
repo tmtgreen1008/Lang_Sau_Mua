@@ -9,8 +9,8 @@ extends RefCounted
 ##   var village := VillageProgress.new()
 ##   var result := DataLoader.read_json("res://assets/data/village_restoration.json")
 ##   village.configure(result.data, result)   # every problem goes into result
-##   village.bind_book(neighbor_book)         # counts requests from now on
 ##   village.piece_restored.connect(func(piece_id: String) -> void: ...)
+##   village.on_request_completed(book.get_completed_count())   # Main, after each hand-over
 
 ## Emitted once for every piece restored by a newly completed request.
 signal piece_restored(piece_id: String)
@@ -77,17 +77,23 @@ func get_level_defs() -> Array[Dictionary]:
 	return _levels
 
 
-## Starts counting requests completed in [param book]: syncs from its current done
-## states (no signals), then follows [signal NeighborBook.request_completed].
-func bind_book(book: NeighborBook) -> void:
-	var done: int = 0
-	for neighbor_id: String in book.get_neighbor_ids():
-		for request: Variant in book.get_requests(neighbor_id):
-			if book.get_status(str((request as Dictionary)["id"])) == NeighborBook.STATE_DONE:
-				done += 1
-	_completed = done
-	_level = _compute_level()
-	book.request_completed.connect(_on_request_completed)
+## Main tells the village how many neighbor requests are done in total (ADR-0002 rule 6; the
+## village does not know the neighbor book). A higher count restores every piece whose
+## unlock_at it reaches, in data order, then emits level_changed if the level rose. The same
+## count does nothing; a lower one (a new game) updates silently.
+func on_request_completed(count: int) -> void:
+	var before: int = _completed
+	_completed = maxi(0, count)
+	var level: int = _compute_level()
+	if _completed > before:
+		for piece: Dictionary in _pieces:
+			var unlock_at: int = int(piece["unlock_at"])
+			if unlock_at > before and unlock_at <= _completed:
+				piece_restored.emit(str(piece["id"]))
+	var changed: bool = level != _level
+	_level = level
+	if changed and _completed > before:
+		level_changed.emit(_level)
 
 
 ## Number of completed neighbor requests counted so far.
@@ -302,19 +308,6 @@ func _read_side(raw: Variant, kind: String, where: String, result: DataResult) -
 		result.add_error(where, "g for a %s must be %s" % [kind, need])
 	if not DataChecks.is_valid_colour(side.get("color")):
 		result.add_warning(where, "color is not #rrggbb or #rrggbbaa")
-
-
-func _on_request_completed(_neighbor_id: String, _request_id: String, _money: int) -> void:
-	var before: int = _completed
-	_completed += 1
-	for piece: Dictionary in _pieces:
-		var unlock_at: int = int(piece["unlock_at"])
-		if unlock_at > before and unlock_at <= _completed:
-			piece_restored.emit(str(piece["id"]))
-	var level: int = _compute_level()
-	if level != _level:
-		_level = level
-		level_changed.emit(_level)
 
 
 func _compute_level() -> int:
