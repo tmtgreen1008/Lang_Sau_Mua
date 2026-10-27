@@ -208,6 +208,16 @@ func sync() -> void             # đọc lại trạng thái hiện tại, khôn
 - Khi một file dữ liệu bị xoá, game hiện thông báo lỗi thay vì màn hình trống.
 - `main.gd` còn dưới 500 dòng, hoặc đã có composer theo quy tắc ở mục 8.
 
+## Implementation Notes (2026-10-27)
+Ghi sau khi cài `Main` theo ADR này. Phần Decision ở trên không đổi; đây là chỗ mã khác chữ hoặc chi tiết chọn khi cài.
+- **Quy tắc 10:** hàm `any_panel_open()` trong Key Interfaces của ADR-0004 được cài thành `_any_panel_open()` (private), để `save_game()` vẫn là API công khai duy nhất của `Main`.
+- **Quy tắc 7:** `_refresh_all()` gọi `Hud.sync(crops, inventory, money, day, phase, season)` rồi `sync()` của từng mục trong `Main._sync_views` (view làng, ruộng, quầy chợ và từng hàng xóm). Ba bảng (chợ, hàng xóm, món ăn) không nằm trong danh sách vì chúng nhận trạng thái mỗi lần `open(...)`. Bài kiểm danh sách đầy đủ (`tests/integration/main/main_refresh_test.gd`) suy ra từ mọi file `src/**/*_view.gd`, nên view mới thiếu `sync()` hoặc thiếu trong danh sách thì test đỏ.
+- **Quy tắc 1 và 2:** một view được nối tín hiệu của chính mô-đun nó hiển thị (`VillageView` nghe `piece_restored` và `level_changed` của `VillageProgress`; `FarmView` nghe `plot_changed` của `FarmGrid`). Đó không phải kết nối giữa hai mô-đun miền; mọi kết nối giữa mô-đun miền nằm trong `Main._wire()`, mỗi tín hiệu do `Main` nối đúng một lần (có test).
+- **Quy tắc 6:** `VillageProgress.bind_book` đã bỏ; hàm thuần là `on_request_completed(count: int)`, `Main` truyền `NeighborBook.get_completed_count()`.
+- **Quy tắc 9:** lớp phủ là `StartupErrorScreen` (lớp 100, nền `MOUSE_FILTER_STOP`, chữ trong `ScrollContainer`). Chỉ có chữ; lựa chọn "Thử lại" và "Game mới" chờ ADR giao diện.
+- **Hạt giống kiểm thử:** `Main._save_game` và `Main._data_dir` được test gán trước `add_child` để không đụng file lưu và dữ liệu thật; không phải API công khai.
+- **MỞ, quy tắc 8 và tiêu chí kiểm tra cuối:** `src/main.gd` hiện **540 dòng**, vượt ngưỡng 500. Quy tắc 8 yêu cầu tách composer trước khi thêm tính năng mới; chưa tách. Cần quyết định composer đầu tiên trước khi cài `Inventory` hay tính năng mới nào.
+
 ## Related
 - ADR-0001 (định dạng lưu): `Main.save_game` dùng API của nó.
 - `docs/architecture/architecture.md`: Layer Map, Module Ownership, Data Flow, API Boundaries.

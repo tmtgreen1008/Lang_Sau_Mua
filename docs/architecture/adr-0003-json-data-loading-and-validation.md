@@ -217,6 +217,17 @@ func validate(crops: CropDatabase, clock: DayClock, book: NeighborBook,
 - Không còn hằng số gameplay cứng trong `src/` ngoài bố cục điểm ảnh.
 - Bản xuất Android đầu tiên mở được toàn bộ file dữ liệu.
 
+## Implementation Notes (2026-10-27)
+Ghi sau khi cài lớp dữ liệu và phần khởi động của `Main`. Phần Decision không đổi; đây là chỗ mã khác chữ hoặc chi tiết chọn khi cài.
+- **Key Interfaces:** `DataValidator.validate(crops, clock, book, village)` chưa có tham số `config: GameConfig`, vì chưa luật chéo nào cần nó. Thêm lại khi có luật đầu tiên.
+- **Kiểm màu (Implementation Guidelines, đã xác minh trên Godot 4.7.2):** `Color.html_is_valid` nhận `#rrggbb`, `#rrggbbaa` và dạng ngắn `#fff`, nhưng cũng nhận chuỗi không có `#`, và từ chối tên màu như `red` dù `Color.from_string("red")` vẫn đọc ra màu đỏ. Luật cài là `DataChecks.is_valid_colour`: bắt đầu bằng `#` **và** `html_is_valid`.
+- **Khoá bắt buộc ngoài chữ ADR** (quy tắc 5, "thiếu khoá bắt buộc là lỗi chết"): `dishes` và `start_unlocked_crops` của `neighbors.json` (rỗng được, vắng thì lỗi); `seasons` không rỗng của mỗi cây; `season`, `reward` và `reward.money` của mỗi nhờ vả; `effect.duration/flash/pulse_scale` của làng; `max_step_seconds` và `day_speed` của đồng hồ. `min_level` của nhờ vả là khoá tuỳ chọn (số nguyên ≥ 0).
+- **Quy tắc 1:** `DataPaths` gom tên năm file dữ liệu và thư mục; bài kiểm đối chiếu thư mục `assets/data` để file mới không thể nằm ngoài danh sách.
+- **Quy tắc 4:** `load_from_file(path) -> bool` vẫn còn ở bốn mô-đun làm lớp mỏng gọi `DataLoader` rồi `configure`; `Main` không dùng chúng mà gọi `configure` trực tiếp để gom lỗi.
+- **Quy tắc 6 và 7:** `Main._load_data()` gom kết quả mọi file bằng `DataResult.absorb`. Khi có file lỗi, dòng "kiểm chéo bị bỏ qua vì [file] lỗi" được đặt **đầu** danh sách lỗi để không bị giới hạn 10 dòng cắt mất.
+- **Quy tắc 8:** `GameConfig` có sáu khoá (`player.speed`, `player.radius`, `field.columns`, `field.rows`, `field.tile_size`, `hud.message_seconds`), giá trị giữ nguyên; `Player`, `FarmView`, `Hud` nhận giá trị qua `setup(...)`, các hằng số cũ đã xoá. Chưa gọi `setup` thì giá trị bằng 0, để quên cấu hình lộ ra ngay.
+- **Còn chờ:** bộ lọc export Android phải đóng gói được các file `.json` (Validation Criteria cuối); chưa có bản xuất.
+
 ## Related
 - ADR-0002 (gốc ghép nối): lỗi khởi động, `Main._build()`.
 - ADR-0001: định dạng lưu cũng dùng JSON nhưng có bộ đọc riêng với dòng và lý do lỗi.

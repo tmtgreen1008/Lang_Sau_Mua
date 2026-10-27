@@ -38,10 +38,13 @@
 
 ## Performance Budgets
 
-- **Target Framerate**: [TO BE CONFIGURED]
-- **Frame Budget**: [TO BE CONFIGURED]
-- **Draw Calls**: [TO BE CONFIGURED]
-- **Memory Ceiling**: [TO BE CONFIGURED]
+Source of truth: the `performance:` block of `project.yaml`. Targets for low-end Android, not yet
+measured (no Android build exists).
+
+- **Target Framerate**: 60
+- **Frame Budget**: 16.67 ms
+- **Draw Calls**: 200 per frame
+- **Memory Ceiling**: 256 MB
 
 ## Testing
 

@@ -237,6 +237,15 @@ func validate_sections(data: Dictionary) -> Array[String]     # REQUIRED_SECTION
 - Lưu hai lần liền: `.bak` là bản của lần lưu đầu.
 - Trên Android và Windows thật: các mục Verification Required đạt, hoặc ADR được sửa theo kết quả.
 
+## Implementation Notes (2026-10-27)
+Phía code và test chạy trên máy tính đã cài; ADR **vẫn Proposed** vì các mục Verification Required cần máy Android và Windows thật.
+- **Đã cài và có test** (`tests/unit/save/`, `tests/integration/save/`): `LoadResult` sáu trạng thái, thứ tự thử `.tmp`, file chính, `.bak`, quy tắc dừng cho `NEWER_VERSION` và `UNREADABLE`, `SaveGame` tự chặn ghi, ghi có đọc lại, `.bak` bền, `backup_loaded_file`, `archive_for_new_game` (tối đa 3 bộ, không tỉa `savegame.v<N>.bak`), `SaveMigrations` và fixture đóng băng `tests/fixtures/saves/v1.json`.
+- **Quy tắc 3 và Key Interfaces:** `MIGRATIONS` được cài thành hàm `static SaveMigrations.migration_table() -> Array[Callable]` (GDScript không cho `const` giữ `Callable`); có `upgrade_with(root, target_version, table)` để test nhiều bước mà không đổi `FORMAT_VERSION`. Một bước migrate trả `Dictionary` khi thành công, hoặc `String` là lý do khi lỗi.
+- **Quy tắc 9:** `UNREADABLE` được kiểm bằng cách tạo một thư mục trùng tên file lưu; đọc file dùng `DataLoader.parse_text` (có dòng và lý do lỗi).
+- **Quy tắc 17:** cài trong `Main.save_game()`; từ lần lưu thất bại thứ hai liên tiếp hiện thông báo; lưu bị `SaveGame` chặn có chủ ý không tính.
+- **Chưa có test:** đọc lại `.tmp` mà khác chuỗi đã ghi (hết dung lượng), và `rename` thất bại giữa chừng (bước (e) và bất biến của `.tmp`). gdUnit không giả lập được lỗi của `FileAccess`/`DirAccess`; hai đường này thuộc mục Verification Required.
+- **Còn chờ:** dòng "sửa đổi bởi ADR-0005" trong Version History của ADR-0001 khi ADR này được Accepted; màn hình có nút "Thử lại" và "Game mới" (ADR giao diện). Hiện bản lưu mới hơn, không đọc được hoặc hỏng chỉ hiện thông báo trên HUD và chặn ghi.
+
 ## Related
 - ADR-0001: ADR này sửa đổi các mục "Ghi an toàn" và "Đọc nghiêm ngặt" của nó.
 - ADR-0002: `Main` điều phối tải, hiện lỗi (quy tắc 9).

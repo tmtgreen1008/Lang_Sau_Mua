@@ -25,7 +25,7 @@ To Truong (người làm game), cùng phiên `/architecture-decision`.
 | **Knowledge Risk** | HIGH theo `VERSION.md`. Không có thay đổi API vòng đời hay thời gian ở 4.5 đến 4.7 trong `breaking-changes.md`, nhưng hành vi vòng đời trên Android hoàn toàn không có trong tài liệu engine |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `breaking-changes.md`, `deprecated-apis.md`, `current-best-practices.md`, `modules/input.md`, `modules/ui.md` |
 | **Post-Cutoff APIs Used** | Không có API mới. Dùng `Node._notification` với tám thông báo: `NOTIFICATION_APPLICATION_PAUSED`, `_RESUMED`, `_FOCUS_IN`, `_FOCUS_OUT`; `NOTIFICATION_WM_WINDOW_FOCUS_IN`, `_FOCUS_OUT`; `NOTIFICATION_WM_CLOSE_REQUEST`; `NOTIFICATION_WM_GO_BACK_REQUEST`. **Đã quan sát:** cả tám tên đều tồn tại và biên dịch được ở Godot 4.7.2 trên máy tính (kiểm bằng `--check-only`, có đối chứng âm: tên giả báo lỗi và exit 1) |
-| **Verification Required** | Tất cả **NOT SOURCEABLE**, kiểm trên máy Android thật: (1) khi nào và theo thứ tự nào mỗi thông báo đến (PAUSED, FOCUS_OUT, WM_WINDOW_FOCUS_OUT, RESUMED, FOCUS_IN); (2) còn bao nhiêu thời gian để ghi file đồng bộ trong lúc PAUSED; (3) `delta` của khung hình đầu tiên sau khi quay lại có bị engine kẹp không; (4) nút Back có gửi `WM_GO_BACK_REQUEST` hay thoát thẳng, và cài đặt dự án nào quyết định (tên cài đặt `application/config/quit_on_go_back` là từ trí nhớ, chưa xác minh; `project.godot` hiện không có); (5) `auto_accept_quit` giữ mặc định thì `WM_CLOSE_REQUEST` có dẫn tới thoát sau khi lưu |
+| **Verification Required** | Tất cả **NOT SOURCEABLE**, kiểm trên máy Android thật: (1) khi nào và theo thứ tự nào mỗi thông báo đến (PAUSED, FOCUS_OUT, WM_WINDOW_FOCUS_OUT, RESUMED, FOCUS_IN); (2) còn bao nhiêu thời gian để ghi file đồng bộ trong lúc PAUSED; (3) `delta` của khung hình đầu tiên sau khi quay lại có bị engine kẹp không; (4) nút Back có gửi `WM_GO_BACK_REQUEST` hay thoát thẳng khi `application/config/quit_on_go_back` tắt (tên cài đặt và `SceneTree.set_quit_on_go_back/is_quit_on_go_back` **đã xác minh tồn tại** trên Godot 4.7.2 máy tính, mặc định `true`; `project.godot` nay đặt `false`; hành vi thật trên Android vẫn chưa kiểm); (5) `auto_accept_quit` giữ mặc định thì `WM_CLOSE_REQUEST` có dẫn tới thoát sau khi lưu |
 
 ## ADR Dependencies
 
@@ -182,7 +182,7 @@ func any_panel_open() -> bool                        # một chỗ duy nhất t�
 ## Risks
 - **Thứ tự và thời điểm các thông báo Android chưa biết** (NOT SOURCEABLE). Giảm nhẹ: nguồn riêng cho `app_paused` và `app_focus`; kiểm trên máy thật; ADR chưa được Accepted khi chưa kiểm.
 - **Thời gian ghi file trong `PAUSED` có thể không đủ** (NOT SOURCEABLE). Giảm nhẹ: ghi đồng bộ vài KB (ADR-0001); bỏ qua khi không đổi; độ bền ghi xử lý ở ADR phiên bản bản lưu.
-- **Tên cài đặt tắt "thoát khi Back" chưa xác minh.** Giảm nhẹ: kiểm khi tạo `export_presets.cfg` và bản xuất đầu tiên; nếu cài đặt không như dự kiến, Back có thể thoát ngay và ADR phải sửa.
+- **Cài đặt tắt "thoát khi Back" có tên đúng nhưng hành vi trên Android chưa kiểm.** Tên `application/config/quit_on_go_back` đã xác minh trên 4.7.2 máy tính và đã đặt `false`. Giảm nhẹ: kiểm ở bản xuất Android đầu tiên; nếu Back vẫn thoát ngay, ADR phải sửa.
 - **Quên tắt một nguồn tạm dừng** làm đồng hồ đứng vĩnh viễn. Giảm nhẹ: quy tắc xử lý hai chiều; bài kiểm gọi chuỗi PAUSED, RESUMED, FOCUS_OUT, FOCUS_IN theo nhiều thứ tự và khẳng định đồng hồ chạy lại.
 - **Giá trị 0,25 giây do ADR đặt**, không có dữ liệu đo. Giảm nhẹ: là dữ liệu, chỉnh được; xem lại sau khi đo trên máy thật.
 - **Họ thông báo `WM_WINDOW_FOCUS_*` có thể không đến trên Android** (từ trí nhớ). Giảm nhẹ: có nguồn riêng và `RESUMED` tắt cả ba nguồn `app_*`/`window_focus`.
@@ -219,6 +219,14 @@ func any_panel_open() -> bool                        # một chỗ duy nhất t�
 - Tốc độ `slow` làm ngày dài gấp đôi; `stop` làm đồng hồ không tiến nhưng `sleep()` vẫn qua ngày.
 - Lưu hai lần liền không đổi trạng thái chỉ ghi một lần.
 - **Trên máy Android thật:** để ứng dụng ở nền vài phút rồi quay lại: số ngày không đổi, chỉ một bản lưu được ghi; nút Back khi không có bảng mở thì mở bảng Tạm dừng và không thoát.
+
+## Implementation Notes (2026-10-27)
+Phía code và test chạy trên máy tính đã cài; ADR **vẫn Proposed** vì các mục Verification Required cần máy Android thật.
+- **Đã cài và có test:** `DayClock` (kẹp bước, năm nguồn tạm dừng, tốc độ ngày, `sleep()` bỏ qua tạm dừng; `tests/unit/time/day_clock_test.gd`) và phía `Main` (bảng thông báo, nguồn `panel` tính lại mỗi khung hình, chặn "Đi ngủ" khi có bảng, bỏ qua lưu khi trạng thái không đổi; `tests/integration/main/main_lifecycle_test.gd`).
+- **Quy tắc 7:** Back khi có bảng mở thì đóng bảng; khi không có bảng nào mở thì chưa làm gì (không thoát). Bảng Tạm dừng chờ ADR giao diện, nên "mở bảng Tạm dừng" chưa cài.
+- **Interface:** `any_panel_open()` được cài thành `_any_panel_open()` (private), theo ADR-0002 quy tắc 10.
+- **Quy tắc 4:** `time_config.json` có `day_speed` và `max_step_seconds` (0,25) như ADR; `DayClock.get_day_speed()` được thêm để đọc chế độ hiện tại.
+- **Quy tắc 10:** `DayClock.configure(data, result)` kiểm `max_step_seconds` ≤ giai đoạn ngắn nhất và các hệ số tốc độ, ghi lỗi vào `result`.
 
 ## Related
 - ADR-0001: ghi file lưu; độ bền ghi là việc của ADR phiên bản bản lưu.

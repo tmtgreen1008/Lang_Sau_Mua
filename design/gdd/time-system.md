@@ -29,11 +29,11 @@ verified-by: To Truong
 - Đồng hồ chạy liên tục, kể cả khi đang mở bảng chợ, hàng xóm hoặc món ăn.
 - Lưu: số ngày, chỉ số giai đoạn, giây đã trôi; mùa không lưu (suy ra).
 
-**Ý định đã xác nhận (2026-10-27), chưa cài:**
-- **Tạm dừng khi mở bảng** (chợ, hàng xóm, món ăn).
+**Ý định đã xác nhận (2026-10-27):**
+- **Tạm dừng khi mở bảng** (chợ, hàng xóm, món ăn): **đã cài** (`Main` tính lại nguồn `panel` mỗi khung hình; test `tests/integration/main/main_lifecycle_test.gd`). "Đi ngủ" bị chặn khi có bảng mở.
 - **Giai đoạn chỉ là không khí:** giữ như hiện tại (đã đúng mã).
-- **Ngoài game không trôi thời gian:** khi ứng dụng xuống nền hoặc đóng, đồng hồ dừng hẳn; mở lại đúng lúc thoát, không mất vụ khi vắng mặt.
-- **Mùa dài 12 ngày** (hiện dữ liệu vẫn là 4; đi kèm luật cây héo hết mùa của hệ thống ruộng).
+- **Ngoài game không trôi thời gian:** khi ứng dụng xuống nền hoặc đóng, đồng hồ dừng hẳn; mở lại đúng lúc thoát, không mất vụ khi vắng mặt: **đã cài và có test trên máy tính** (nguồn tạm dừng riêng cho `PAUSED`, `FOCUS_OUT`, `WM_WINDOW_FOCUS_OUT`; mỗi lần `tick` bị kẹp ở `max_step_seconds`). **Chưa kiểm trên Android thật** (ADR-0004).
+- **Mùa dài 12 ngày** (hiện dữ liệu vẫn là 4; đi kèm luật cây héo hết mùa của hệ thống ruộng): **chưa cài**.
 
 ## 4. Formulas
 
@@ -45,8 +45,8 @@ verified-by: To Truong
 ## 5. Edge Cases
 
 - `tick` với `delta ≤ 0`: bỏ qua.
-- `tick` với bước lớn: bước được kẹp ở `max_step_seconds` (dữ liệu, khởi điểm 0,25 giây) nên mỗi lần `tick` vượt tối đa một ranh giới giai đoạn; thời gian ứng dụng ở nền không bao giờ được cộng (ADR-0004). *Mã hiện tại chưa kẹp: một `delta` lớn lặp qua nhiều giai đoạn và nhiều ngày, phát đủ tín hiệu theo thứ tự và `Main` lưu mỗi ngày; hành vi của `delta` đầu tiên sau khi quay lại từ nền chưa xác minh trên điện thoại.*
-- Cấu hình rỗng, giai đoạn có giây ≤ 0 hoặc mùa thiếu mã: nạp thất bại; lỗi được ghi vào `DataResult` và `Main` hiện lỗi (ADR-0003: `configure(data, result)` không còn trả bool). *Mã hiện tại: `configure` trả `false`.*
+- `tick` với bước lớn: bước được kẹp ở `max_step_seconds` (dữ liệu, khởi điểm 0,25 giây) nên mỗi lần `tick` vượt tối đa một ranh giới giai đoạn; thời gian ứng dụng ở nền không bao giờ được cộng (ADR-0004). *Đã cài: `DayClock.tick` kẹp bước; hành vi của `delta` đầu tiên sau khi quay lại từ nền trên điện thoại thật chưa xác minh.*
+- Cấu hình rỗng, giai đoạn có giây ≤ 0 hoặc mùa thiếu mã: nạp thất bại; lỗi được ghi vào `DataResult` và `Main` hiện lỗi (ADR-0003: `configure(data, result)` không còn trả bool). *Đã cài: `configure(data, result)` ghi lỗi vào `result` và giữ trạng thái cũ; `Main` hiện màn hình lỗi khởi động.*
 - Gọi `get_phase_id`, `get_season_id` trước khi nạp cấu hình: lỗi chỉ số (hiện `Main` dừng khởi động nếu nạp thất bại).
 - `from_dict`: số ngày < 1 thành 1; chỉ số giai đoạn bị kẹp vào khoảng hợp lệ; giây đã trôi ngoài khoảng hoặc NaN thành 0. Không phát tín hiệu.
 - Số ngày không có cận trên.
@@ -64,13 +64,13 @@ verified-by: To Truong
 4. `sleep()` chuyển ngay sang giai đoạn đầu của ngày kế.
 5. `to_dict` rồi `from_dict` cho cùng trạng thái; giá trị ngoài khoảng bị kẹp.
 6. Cấu hình không hợp lệ thì nạp thất bại, không crash.
-7. *(chưa cài)* Khi bảng chợ, hàng xóm hoặc món ăn đang mở thì đồng hồ không tiến.
-8. *(chưa cài)* Khi ứng dụng xuống nền hoặc đóng, đồng hồ không tiến; mở lại không nhảy qua ngày nào.
+7. Khi bảng chợ, hàng xóm hoặc món ăn đang mở thì đồng hồ không tiến. *(đã cài; có test tích hợp)*
+8. Khi ứng dụng xuống nền hoặc đóng, đồng hồ không tiến; mở lại không nhảy qua ngày nào. *(đã cài; có test trên máy tính; chưa kiểm trên Android thật)*
 9. *(dữ liệu chưa đổi)* `days_per_season` là 12 trong `time_config.json`.
 
 ## Open Questions and Follow-Up Work
 
-- **Việc cần làm:** cài tiêu chí 7 và 8; đổi `days_per_season` thành 12; đối chiếu với luật "héo khi hết mùa" của hệ thống ruộng (mùa dài hơn để ngô 4 ngày kịp chín). Kiểm tra lại các nhờ vả mùa thu cần cà chua (cà chua chỉ gieo mùa hạ) khi mùa dài hơn.
+- **Việc cần làm:** kiểm tiêu chí 8 trên Android thật (đã cài, mới có test trên máy tính); đổi `days_per_season` thành 12; đối chiếu với luật "héo khi hết mùa" của hệ thống ruộng (mùa dài hơn để ngô 4 ngày kịp chín). Kiểm tra lại các nhờ vả mùa thu cần cà chua (cà chua chỉ gieo mùa hạ) khi mùa dài hơn.
 - **Chưa quyết định:** số mùa (đề cương dự kiến thêm xuân, đông), có đếm năm hay không.
 
 ## Version History
@@ -78,3 +78,4 @@ verified-by: To Truong
 | Ngày | Thay đổi |
 |---|---|
 | 2026-10-27 | Bản đầu, reverse-documented ở commit `047ad69`. Bốn ý định đã xác nhận: giai đoạn chỉ là không khí (đã cài); tạm dừng khi mở bảng, dừng ngoài game, mùa 12 ngày (chưa cài). |
+| 2026-10-27 | Đồng bộ với mã (ADR-0004 phía `Main` và `DayClock`): tiêu chí 7 và 8 đã cài; kẹp bước và `configure(data, result)` đã cài; mùa 12 ngày vẫn chưa. Chưa kiểm trên Android thật. |

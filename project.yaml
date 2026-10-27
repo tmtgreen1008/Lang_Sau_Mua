@@ -55,5 +55,14 @@ commands:
   run: "godot --path . --windowed --resolution 1280x720"
   smoke: "godot --headless --quit-after 5"
 
+performance:
+  # Targets committed on 2026-10-27 for low-end Android (2D, Compatibility renderer).
+  # NOT MEASURED YET: there is no Android build. Treat them as goals, not results, and revise them
+  # from real numbers (/perf-profile) once a device build exists.
+  target_framerate: 60
+  frame_budget_ms: 16.67
+  draw_call_limit: 200
+  memory_ceiling_mb: 256
+
 modes:
   rigor: standard
