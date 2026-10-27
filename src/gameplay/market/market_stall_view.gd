@@ -20,6 +20,12 @@ func contains_point(canvas_position: Vector2) -> bool:
 	return Rect2(Vector2.ZERO, SIZE).has_point(to_local(canvas_position))
 
 
+## Draws the stall again from its current state (the contract every view has, ADR-0002 rule 7).
+## The stall has no changing state, so this only redraws.
+func sync() -> void:
+	queue_redraw()
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, SIZE), BODY_COLOR)
 	draw_rect(Rect2(Vector2.ZERO, Vector2(SIZE.x, ROOF_HEIGHT)), ROOF_COLOR)

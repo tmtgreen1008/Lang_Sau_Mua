@@ -47,6 +47,12 @@ func cell_center(cell: Vector2i) -> Vector2:
 	return to_global((Vector2(cell) + Vector2(0.5, 0.5)) * tile_size)
 
 
+## Draws the field again from the grid's current state, with no effect (the contract every
+## view has, ADR-0002 rule 7; use after the grid was loaded from a save).
+func sync() -> void:
+	queue_redraw()
+
+
 func _on_plot_changed(_cell: Vector2i) -> void:
 	queue_redraw()
 

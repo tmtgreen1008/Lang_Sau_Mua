@@ -17,6 +17,8 @@ const NEIGHBOR_FIRST_GAP_X: float = 60.0
 const NEIGHBOR_SPACING_X: float = 100.0
 const NEIGHBOR_TOP: float = 370.0
 const GROUND_COLOR: Color = Color(0.45, 0.68, 0.38)
+## A failed save stays quiet once; from the second one in a row the player is told.
+const FAILED_SAVES_BEFORE_MESSAGE: int = 2
 
 ## Emitted when every request of a season is done (forwarded from NeighborBook; story 005).
 signal season_requests_completed(season_id: String)
@@ -61,6 +63,10 @@ var _save_game: SaveGame = SaveGame.new()
 var _upgraded_data: Dictionary = {}
 ## JSON of the state last written successfully; an identical state is not written again.
 var _last_saved_state: String = ""
+## Saves that failed one after the other; a success starts the count again (ADR-0005 rule 17).
+var _failed_saves: int = 0
+## Everything with a sync() that _refresh_all() asks to redraw from the current state.
+var _sync_views: Array[Object] = []
 ## False when a data file failed to load; input and clock are then skipped.
 var _initialised: bool = false
 ## True while the player walks to the stall to open the market.
@@ -69,13 +75,14 @@ var _pending_stall: bool = false
 var _pending_cell: Vector2i = FarmView.INVALID_CELL
 
 
-## Startup (ADR-0002 rule 9 and 12): build once, wire once, then load the save. A data problem
-## stops here with a message on screen; nothing is built, ticked or saved.
+## Startup (ADR-0002 rules 7, 9 and 12): build once, wire once, load the save, then show it. A
+## data problem stops here with a message on screen; nothing is built, ticked or saved.
 func _ready() -> void:
 	if not _build():
 		return
 	_wire()
 	_load_saved_game()
+	_refresh_all()
 	_initialised = true
 
 
@@ -137,11 +144,13 @@ func _build_world() -> void:
 	_village_view.position = field_position
 	add_child(_village_view)
 	_village_view.setup(_village)
+	_sync_views.append(_village_view)
 
 	_farm_view = FarmView.new()
 	_farm_view.position = field_position
 	add_child(_farm_view)
 	_farm_view.setup(_grid, _db, _config)
+	_sync_views.append(_farm_view)
 
 	_player = Player.new()
 	_player.position = Vector2(viewport_size.x * 0.5,
@@ -153,6 +162,7 @@ func _build_world() -> void:
 	_stall = MarketStallView.new()
 	_stall.position = Vector2(_farm_view.position.x + field_width + STALL_GAP_X, STALL_TOP)
 	add_child(_stall)
+	_sync_views.append(_stall)
 
 	var field_right: float = _farm_view.position.x + field_width
 	var slot: int = 0
@@ -163,14 +173,12 @@ func _build_world() -> void:
 				field_right + NEIGHBOR_FIRST_GAP_X + slot * NEIGHBOR_SPACING_X, NEIGHBOR_TOP)
 		add_child(view)
 		_neighbor_views[neighbor_id] = view
+		_sync_views.append(view)
 		slot += 1
 
 	_hud = Hud.new()
 	add_child(_hud)
 	_hud.setup(_db, _config)
-	_hud.set_unlocked_crops(_book.get_unlocked_crops())
-	_hud.set_inventory(_grid.inventory)
-	_hud.set_money(_market.money)
 
 	_market_panel = MarketPanel.new()
 	add_child(_market_panel)
@@ -206,7 +214,6 @@ func _wire() -> void:
 	_clock.season_changed.connect(_on_season_changed)
 	_clock.day_advanced.connect(_on_day_advanced)
 	_grid.current_season = _clock.get_season_id()
-	_refresh_time_hud()
 
 
 func _draw() -> void:
@@ -337,10 +344,16 @@ func save_game() -> bool:
 	var fingerprint: String = JSON.stringify(state)
 	if fingerprint == _last_saved_state:
 		return true
-	if not _save_game.save(state):
-		return false
-	_last_saved_state = fingerprint
-	return true
+	if _save_game.save(state):
+		_last_saved_state = fingerprint
+		_failed_saves = 0
+		return true
+	# A write SaveGame refuses on purpose was already explained when the save was loaded.
+	if not _save_game.is_write_blocked():
+		_failed_saves += 1
+		if _failed_saves >= FAILED_SAVES_BEFORE_MESSAGE:
+			_hud.show_message("Không lưu được game. Hãy kiểm tra xem máy còn đủ chỗ trống không.")
+	return false
 
 
 ## True while any panel that covers the map is open (market, neighbors, dishes).
@@ -378,14 +391,19 @@ func _load_saved_game() -> void:
 	_market.from_dict(state["market"] as Dictionary)
 	_book.from_dict(state["neighbors"] as Dictionary)
 	_village.from_dict(state["village"] as Dictionary)
-	# The loaders emit nothing: refresh every display by hand, without effects.
+	# The loaders emit nothing; the displays are brought up to date by _refresh_all() afterwards.
 	_grid.current_season = _clock.get_season_id()
-	_hud.set_unlocked_crops(_book.get_unlocked_crops())
-	_hud.set_inventory(_grid.inventory)
-	_hud.set_money(_market.money)
-	_refresh_time_hud()
-	_farm_view.queue_redraw()
-	_village_view.sync_instant()
+
+
+## Brings every display up to date with the game state, in one place (ADR-0002 rule 7): the HUD
+## gets the whole state, then every view in _sync_views reads its module again. No effects play.
+## A new view must be added to _sync_views; tests/integration/main/main_refresh_test.gd fails
+## when a *_view.gd file is missing from it.
+func _refresh_all() -> void:
+	_hud.sync(_book.get_unlocked_crops(), _grid.inventory, _market.money, _clock.day_number,
+			_clock.get_phase_name(), _clock.get_season_name())
+	for view: Object in _sync_views:
+		view.call("sync")
 
 
 ## SaveGame calls this for every well-formed save file it considers: upgrades it to the

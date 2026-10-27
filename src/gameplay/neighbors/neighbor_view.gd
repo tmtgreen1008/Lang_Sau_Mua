@@ -36,6 +36,12 @@ func contains_point(canvas_position: Vector2) -> bool:
 	return Rect2(Vector2.ZERO, SIZE).has_point(to_local(canvas_position))
 
 
+## Draws the figure again from its current state (the contract every view has, ADR-0002 rule 7).
+## The figure only holds its name and colour, so this only redraws.
+func sync() -> void:
+	queue_redraw()
+
+
 func _draw() -> void:
 	var centre_x: float = SIZE.x * 0.5
 	draw_circle(Vector2(centre_x, HEAD_RADIUS + 2.0), HEAD_RADIUS, HEAD_COLOR)

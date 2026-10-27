@@ -71,15 +71,15 @@ func setup(progress: VillageProgress) -> void:
 			"size": Vector2(float(size[0]), float(size[1])),
 			"shapes": shapes,
 		})
-	sync_instant()
+	sync()
 	if not progress.piece_restored.is_connected(_on_piece_restored):
 		progress.piece_restored.connect(_on_piece_restored)
 		progress.level_changed.connect(_on_level_changed)
 
 
-## Drops any running effect and shows the progress' current state immediately
-## (use after [method VillageProgress.from_dict]).
-func sync_instant() -> void:
+## Drops any running effect and shows the progress' current state immediately (the contract
+## every view has, ADR-0002 rule 7; use after [method VillageProgress.from_dict]).
+func sync() -> void:
 	for tween: Tween in _tweens.values():
 		tween.kill()
 	_tweens.clear()

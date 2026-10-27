@@ -114,6 +114,17 @@ func setup(db: CropDatabase, config: GameConfig) -> void:
 			tool_button.button_pressed = true
 
 
+## Shows the whole game state at once, with no effect (the contract every presentation module
+## has, ADR-0002 rule 7; Main calls it after loading a save). The message that is showing, the
+## selected tool and a selected crop that is still unlocked stay as they are.
+func sync(crops: Array[String], inventory: Dictionary, money: int, day_number: int,
+		phase_name: String, season_name: String) -> void:
+	set_unlocked_crops(crops)
+	set_inventory(inventory)
+	set_money(money)
+	set_time_info(day_number, phase_name, season_name)
+
+
 ## Refreshes the inventory label from a crop_id -> count Dictionary.
 func set_inventory(inventory: Dictionary) -> void:
 	_last_inventory = inventory
