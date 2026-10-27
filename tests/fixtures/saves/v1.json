@@ -1,0 +1,202 @@
+{
+  "data": {
+    "clock": {
+      "day_number": 2,
+      "phase_elapsed": 0.0,
+      "phase_index": 0
+    },
+    "farm": {
+      "columns": 5,
+      "current_season": "ha",
+      "inventory": {
+        "ca_chua": 0,
+        "cai_xanh": 0,
+        "ngo": 3
+      },
+      "plots": [
+        {
+          "crop_id": "ngo",
+          "growth": 1,
+          "state": 2,
+          "watered": false,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 1,
+          "watered": false,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 4,
+          "y": 1
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 4,
+          "y": 2
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 2,
+          "y": 3
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "crop_id": "",
+          "growth": 0,
+          "state": 0,
+          "watered": false,
+          "x": 4,
+          "y": 3
+        }
+      ],
+      "rows": 4
+    },
+    "market": {
+      "money": 25
+    },
+    "neighbors": {
+      "request_states": {
+        "ba_tu_1": "active",
+        "ba_tu_2": "not_started",
+        "chu_ba_1": "active",
+        "chu_ba_2": "not_started",
+        "co_sau_1": "active",
+        "co_sau_2": "not_started"
+      },
+      "unlocked_crops": [
+        "ngo"
+      ],
+      "unlocked_dishes": []
+    },
+    "village": {
+      "completed_requests": 0
+    }
+  },
+  "version": 1
+}

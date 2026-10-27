@@ -59,6 +59,8 @@ var _village_view: VillageView
 var _village_text: String = ""
 ## Story 006: reads and writes user://savegame.json.
 var _save_game: SaveGame = SaveGame.new()
+## "data" of the save accepted by _accept_save, already upgraded to the current format.
+var _upgraded_data: Dictionary = {}
 ## False when a data file failed to load; input and clock are then skipped.
 var _initialised: bool = false
 ## True while the player walks to the stall to open the market.
@@ -251,15 +253,31 @@ func save_game() -> bool:
 	})
 
 
-## Startup: applies the last save if there is one; says so when a file was unusable.
+## Startup: applies the last save if there is one. A save the game cannot use is left exactly
+## as it is and SaveGame blocks saving, so the player's file is never overwritten (ADR-0005);
+## the choice between retrying and a new game comes with the startup error screen (ADR-0002).
 func _load_saved_game() -> void:
-	if not _save_game.has_save():
-		return
-	var state: Dictionary = _save_game.load_state()
-	if state.is_empty():
-		if _save_game.last_load_failed:
-			_hud.show_message("Không đọc được file lưu, bắt đầu game mới.")
-		return
+	var result: LoadResult = _save_game.load_state(_accept_save)
+	match result.status:
+		LoadResult.Status.NO_SAVE:
+			return
+		LoadResult.Status.NEWER_VERSION:
+			push_warning("Main: %s" % result.message)
+			_hud.show_message("Bản lưu từ phiên bản game mới hơn; game sẽ không ghi đè lên nó.")
+			return
+		LoadResult.Status.UNREADABLE:
+			push_warning("Main: %s" % result.message)
+			_hud.show_message("Không đọc được file lưu; game sẽ không ghi đè lên nó. Hãy mở lại game.")
+			return
+		LoadResult.Status.CORRUPT:
+			push_warning("Main: %s" % result.message)
+			_hud.show_message("File lưu bị hỏng; game sẽ không ghi đè lên nó.")
+			return
+	if result.version < SaveGame.FORMAT_VERSION:
+		_save_game.backup_loaded_file(result.version)
+	if result.status == LoadResult.Status.RECOVERED:
+		_hud.show_message("Đã khôi phục từ bản lưu trước.")
+	var state: Dictionary = _upgraded_data
 	_grid.from_dict(state["farm"] as Dictionary)
 	_clock.from_dict(state["clock"] as Dictionary)
 	_market.from_dict(state["market"] as Dictionary)
@@ -273,6 +291,20 @@ func _load_saved_game() -> void:
 	_refresh_time_hud()
 	_farm_view.queue_redraw()
 	_village_view.sync_instant()
+
+
+## SaveGame calls this for every well-formed save file it considers: upgrades it to the
+## current format and checks its sections. Returns "" when usable, else the reason.
+func _accept_save(root: Dictionary) -> String:
+	var upgraded: UpgradeResult = SaveMigrations.upgrade(root)
+	if not upgraded.ok:
+		return upgraded.message
+	var data: Dictionary = upgraded.root["data"] as Dictionary
+	var problems: Array[String] = SaveMigrations.validate_sections(data)
+	if not problems.is_empty():
+		return ", ".join(problems)
+	_upgraded_data = data
+	return ""
 
 
 func _process(delta: float) -> void:
