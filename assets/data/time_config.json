@@ -1,5 +1,5 @@
 {
-  "_schema": "phases: ordered list of day phases {id, name (Vietnamese HUD label), seconds (real seconds the phase lasts)}. days_per_season: whole days before the season switches. seasons: ordered list of {id (must match ids in crops.json 'seasons'), name (Vietnamese HUD label)}; the cycle repeats after the last one.",
+  "_schema": "phases: ordered list of day phases {id, name (Vietnamese HUD label), seconds (real seconds the phase lasts, greater than 0)}. days_per_season: whole days before the season switches (at least 1). seasons: ordered list of {id (must match ids in crops.json 'seasons'), name (Vietnamese HUD label)}; the cycle repeats after the last one. max_step_seconds: longest slice of real time one tick may add (greater than 0, at most the shortest phase); a longer frame is cut to this, so a stall or a return from the background never skips a phase (ADR-0004 rule 1). day_speed: factor applied to each slice per speed mode; needs normal (greater than 0), slow and stop (0 or more); stop freezes the clock, sleeping still ends the day (ADR-0004 rule 4).",
   "phases": [
     { "id": "morning", "name": "Sáng", "seconds": 30.0 },
     { "id": "afternoon", "name": "Chiều", "seconds": 30.0 },
@@ -9,5 +9,7 @@
   "seasons": [
     { "id": "ha", "name": "Mùa hạ" },
     { "id": "thu", "name": "Mùa thu" }
-  ]
+  ],
+  "max_step_seconds": 0.25,
+  "day_speed": { "normal": 1.0, "slow": 0.5, "stop": 0.0 }
 }
