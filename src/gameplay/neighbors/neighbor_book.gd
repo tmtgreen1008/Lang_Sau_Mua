@@ -10,9 +10,10 @@ extends RefCounted
 ##
 ## Usage:
 ##   var book := NeighborBook.new()
-##   if book.load_from_file("res://assets/data/neighbors.json"):
-##       if book.can_complete("ba_tu", grid.inventory):
-##           var request: Dictionary = book.complete_request("ba_tu", grid.inventory)
+##   var result := DataLoader.read_json("res://assets/data/neighbors.json")
+##   book.configure(result.data, result)      # every problem goes into result
+##   if book.can_complete("ba_tu", grid.inventory):
+##       var request: Dictionary = book.complete_request("ba_tu", grid.inventory)
 
 ## Emitted after a request was completed and its produce removed from the inventory.
 ## [param money] is the money reward; the caller adds it to the player.
@@ -28,6 +29,15 @@ signal season_requests_completed(season_id: String)
 const STATE_NOT_STARTED: String = "not_started"
 const STATE_ACTIVE: String = "active"
 const STATE_DONE: String = "done"
+
+const _SOURCE: String = "neighbors.json"
+const _TOP_KEYS: Array[String] = ["start_unlocked_crops", "dishes", "neighbors"]
+const _DISH_KEYS: Array[String] = ["id", "name"]
+const _NEIGHBOR_KEYS: Array[String] = ["id", "name", "color", "thanks_text", "requests"]
+const _REQUEST_KEYS: Array[String] = ["id", "season", "offer_text", "missing_text", "done_text",
+		"require", "reward", "min_level"]
+const _REQUEST_TEXT_KEYS: Array[String] = ["offer_text", "missing_text", "done_text"]
+const _REWARD_KEYS: Array[String] = ["money", "unlock_crop", "unlock_dish"]
 
 ## neighbor_id -> neighbor definition Dictionary.
 var _neighbors: Dictionary[String, Dictionary] = {}
@@ -47,35 +57,66 @@ var _start_crops: Array[String] = []
 var _completed_seasons: Dictionary[String, bool] = {}
 
 
-## Loads request content from [param path] and resets all progress to a new game.
-## Returns false (and logs) on any error.
+## Reads [param path] through [DataLoader] and applies it with [method configure]. Logs every
+## problem and returns false when the content is unusable. A thin wrapper: Main gathers the
+## results of all files itself and calls [method configure] directly.
 func load_from_file(path: String) -> bool:
+	var result: DataResult = DataLoader.read_json(path)
+	if result.ok():
+		configure(result.data, result)
+	for message: String in result.errors:
+		push_error("NeighborBook: %s" % message)
+	for message: String in result.warnings:
+		push_warning("NeighborBook: %s" % message)
+	return result.ok()
+
+
+## Checks [param data] (the shape of neighbors.json), records every problem in [param result]
+## and, only when this call added no error, replaces the content and resets all progress to a
+## new game. On errors the previous content stays. Errors already in [param result] (from
+## other files) do not block it. This checks the file on its own; whether the crops, seasons
+## and dishes it names exist is the DataValidator's job.
+## Warnings (not errors): empty names or texts, invalid colour, negative money (clamped to 0),
+## keys that are not part of the format.
+func configure(data: Dictionary, result: DataResult) -> void:
+	var errors_before: int = DataChecks.error_count(result)
+	DataChecks.warn_unknown_keys(data, _TOP_KEYS, _SOURCE, result)
+	var start_crops: Array[String] = _read_start_crops(data.get("start_unlocked_crops"), result)
+	var dish_names: Dictionary[String, String] = _read_dishes(data.get("dishes"), result)
+	var neighbors: Dictionary[String, Dictionary] = {}
+	var neighbor_ids: Array[String] = []
+	var requests: Dictionary[String, Dictionary] = {}
+	var request_seasons: Dictionary[String, String] = {}
+	var raw: Variant = data.get("neighbors")
+	if not raw is Array or (raw as Array).is_empty():
+		result.add_error(_SOURCE, "neighbors must be a non-empty list")
+	else:
+		var entries: Array = raw as Array
+		for i: int in entries.size():
+			_read_neighbor(entries[i], "%s: neighbors[%d]" % [_SOURCE, i], result, neighbors,
+					neighbor_ids, requests, request_seasons)
+	if DataChecks.error_count(result) > errors_before:
+		return
 	_clear()
-	if not FileAccess.file_exists(path):
-		push_error("NeighborBook: file not found: %s" % path)
-		return false
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not parsed is Dictionary:
-		push_error("NeighborBook: invalid JSON root in %s" % path)
-		return false
-	var root: Dictionary = parsed
-	for dish: Variant in root.get("dishes", []) as Array:
-		if dish is Dictionary and not str((dish as Dictionary).get("id", "")).is_empty():
-			_dish_names[str((dish as Dictionary)["id"])] = str((dish as Dictionary).get("name", ""))
-	for crop_id: Variant in root.get("start_unlocked_crops", []) as Array:
-		_start_crops.append(str(crop_id))
-	var list: Variant = root.get("neighbors")
-	if not list is Array:
-		push_error("NeighborBook: missing 'neighbors' array in %s" % path)
-		return false
-	for entry: Variant in list as Array:
-		if entry is Dictionary:
-			_add_neighbor(entry as Dictionary)
-	if _neighbor_ids.is_empty():
-		push_error("NeighborBook: no valid neighbors in %s" % path)
-		return false
+	_neighbors = neighbors
+	_neighbor_ids = neighbor_ids
+	_requests = requests
+	_request_seasons = request_seasons
+	_dish_names = dish_names
+	_start_crops = start_crops
 	_reset_progress()
-	return true
+
+
+## Crops plantable from the start of the game (ids), in file order.
+func get_start_crops() -> Array[String]:
+	return _start_crops.duplicate()
+
+
+## Ids of every dish a reward may unlock, in file order.
+func get_dish_ids() -> Array[String]:
+	var ids: Array[String] = []
+	ids.append_array(_dish_names.keys())
+	return ids
 
 
 ## Neighbor ids in file order.
@@ -248,28 +289,154 @@ func _clear() -> void:
 	_completed_seasons.clear()
 
 
-func _add_neighbor(entry: Dictionary) -> void:
-	var neighbor_id: String = str(entry.get("id", ""))
-	var raw_requests: Variant = entry.get("requests")
-	if neighbor_id.is_empty() or _neighbors.has(neighbor_id) or not raw_requests is Array:
-		push_error("NeighborBook: skipping invalid neighbor entry: %s" % str(entry.get("id", "?")))
+func _read_start_crops(raw: Variant, result: DataResult) -> Array[String]:
+	var crops: Array[String] = []
+	var where: String = "%s: start_unlocked_crops" % _SOURCE
+	if not raw is Array:
+		result.add_error(where, "must be a list of crop ids")
+		return crops
+	for item: Variant in raw as Array:
+		if not item is String or (item as String).is_empty():
+			result.add_error(where, "every entry must be a non-empty crop id")
+		else:
+			crops.append(item as String)
+	return crops
+
+
+func _read_dishes(raw: Variant, result: DataResult) -> Dictionary[String, String]:
+	var names: Dictionary[String, String] = {}
+	if not raw is Array:
+		result.add_error(_SOURCE, "dishes must be a list (it may be empty)")
+		return names
+	var entries: Array = raw as Array
+	for i: int in entries.size():
+		var where: String = "%s: dishes[%d]" % [_SOURCE, i]
+		if not entries[i] is Dictionary:
+			result.add_error(where, "must be an object")
+			continue
+		var entry: Dictionary = entries[i] as Dictionary
+		DataChecks.warn_unknown_keys(entry, _DISH_KEYS, where, result)
+		var id: Variant = entry.get("id")
+		if not id is String or (id as String).is_empty():
+			result.add_error(where, "id must be a non-empty string")
+			continue
+		if names.has(id):
+			result.add_error(where, "duplicate id '%s'" % id)
+			continue
+		var dish_name: Variant = entry.get("name")
+		if not dish_name is String or (dish_name as String).is_empty():
+			result.add_warning(where, "name is empty; showing the id")
+			dish_name = id
+		names[id as String] = dish_name as String
+	return names
+
+
+## Checks one neighbor and its requests; when the neighbor has a usable id it is added
+## (with only its usable requests), so later errors can still be found.
+func _read_neighbor(raw: Variant, where: String, result: DataResult,
+		neighbors: Dictionary[String, Dictionary], neighbor_ids: Array[String],
+		requests: Dictionary[String, Dictionary], request_seasons: Dictionary[String, String]) -> void:
+	if not raw is Dictionary:
+		result.add_error(where, "must be an object")
 		return
+	var entry: Dictionary = (raw as Dictionary).duplicate(true)
+	DataChecks.warn_unknown_keys(entry, _NEIGHBOR_KEYS, where, result)
+	var id: Variant = entry.get("id")
+	var id_ok: bool = id is String and not (id as String).is_empty()
+	if not id_ok:
+		result.add_error(where, "id must be a non-empty string")
+	elif neighbors.has(id):
+		result.add_error(where, "duplicate id '%s'" % id)
+		id_ok = false
+	if not entry.get("name") is String or (entry["name"] as String).is_empty():
+		result.add_warning(where, "name is empty; showing the id")
+		entry["name"] = id if id is String else ""
+	if not DataChecks.is_valid_colour(entry.get("color")):
+		result.add_warning(where, "color is not #rrggbb or #rrggbbaa; using white")
+		entry["color"] = "#ffffff"
 	var valid_requests: Array = []
-	for raw: Variant in raw_requests as Array:
-		if not raw is Dictionary:
-			continue
-		var request: Dictionary = raw
-		var request_id: String = str(request.get("id", ""))
-		if request_id.is_empty() or _requests.has(request_id) or not request.get("require") is Dictionary:
-			push_error("NeighborBook: skipping invalid request entry: %s" % request_id)
-			continue
-		_requests[request_id] = request
-		_request_seasons[request_id] = str(request.get("season", ""))
-		valid_requests.append(request)
-	var neighbor: Dictionary = entry.duplicate()
-	neighbor["requests"] = valid_requests
-	_neighbors[neighbor_id] = neighbor
-	_neighbor_ids.append(neighbor_id)
+	var raw_requests: Variant = entry.get("requests")
+	if not raw_requests is Array or (raw_requests as Array).is_empty():
+		result.add_error(where, "requests must be a non-empty list")
+	else:
+		var list: Array = raw_requests as Array
+		for j: int in list.size():
+			_read_request(list[j], "%s.requests[%d]" % [where, j], result, valid_requests,
+					requests, request_seasons)
+	if id_ok:
+		entry["requests"] = valid_requests
+		neighbors[id as String] = entry
+		neighbor_ids.append(id as String)
+
+
+func _read_request(raw: Variant, where: String, result: DataResult, valid_requests: Array,
+		requests: Dictionary[String, Dictionary], request_seasons: Dictionary[String, String]) -> void:
+	if not raw is Dictionary:
+		result.add_error(where, "must be an object")
+		return
+	var entry: Dictionary = (raw as Dictionary).duplicate(true)
+	DataChecks.warn_unknown_keys(entry, _REQUEST_KEYS, where, result)
+	var id: Variant = entry.get("id")
+	var id_ok: bool = id is String and not (id as String).is_empty()
+	if not id_ok:
+		result.add_error(where, "id must be a non-empty string")
+	elif requests.has(id):
+		result.add_error(where, "duplicate id '%s' (request ids are unique over the whole file)" % id)
+		id_ok = false
+	var season: Variant = entry.get("season")
+	if not season is String or (season as String).is_empty():
+		result.add_error(where, "season must be a non-empty season id")
+	for key: String in _REQUEST_TEXT_KEYS:
+		if not entry.get(key) is String or (entry[key] as String).is_empty():
+			result.add_warning(where, "%s is empty" % key)
+	_read_require(entry, where, result)
+	_read_reward(entry, where, result)
+	if entry.has("min_level"):
+		var min_level: Variant = entry["min_level"]
+		if not DataChecks.is_whole(min_level) or int(min_level) < 0:
+			result.add_error(where, "min_level must be a whole number of at least 0")
+	if id_ok:
+		requests[id as String] = entry
+		request_seasons[id as String] = season as String if season is String else ""
+		valid_requests.append(entry)
+
+
+## Checks the require object and turns its quantities into ints.
+func _read_require(entry: Dictionary, where: String, result: DataResult) -> void:
+	var require: Variant = entry.get("require")
+	if not require is Dictionary or (require as Dictionary).is_empty():
+		result.add_error(where, "require must be an object with at least one crop")
+		return
+	var table: Dictionary = require as Dictionary
+	for crop_id: Variant in table:
+		var quantity: Variant = table[crop_id]
+		if not DataChecks.is_whole(quantity) or int(quantity) <= 0:
+			result.add_error(where, "require.%s must be a whole number greater than 0" % str(crop_id))
+		else:
+			table[crop_id] = int(quantity)
+
+
+## Checks the reward object; money becomes an int (negative values are clamped to 0).
+func _read_reward(entry: Dictionary, where: String, result: DataResult) -> void:
+	var reward: Variant = entry.get("reward")
+	if not reward is Dictionary:
+		result.add_error(where, "reward must be an object")
+		return
+	var table: Dictionary = reward as Dictionary
+	DataChecks.warn_unknown_keys(table, _REWARD_KEYS, where + ".reward", result)
+	var money: Variant = table.get("money")
+	if not DataChecks.is_number(money):
+		result.add_error(where, "reward.money must be a number")
+	elif float(money) < 0.0:
+		result.add_warning(where, "reward.money is negative; using 0")
+		table["money"] = 0
+	else:
+		table["money"] = int(money)
+	for key: String in ["unlock_crop", "unlock_dish"]:
+		if not table.has(key):
+			table[key] = ""
+		elif not table[key] is String:
+			result.add_error(where, "reward.%s must be an id or an empty string" % key)
 
 
 ## New-game progress: the first request of each neighbor is active, the rest wait.

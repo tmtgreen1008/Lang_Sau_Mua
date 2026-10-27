@@ -72,12 +72,11 @@ func load_from_file(path: String) -> bool:
 ## Checks [param data] (same shape as time_config.json), records every problem in
 ## [param result] and, only when this call added no error, applies it and restarts at day 1,
 ## first phase, first season, normal speed. Errors already in [param result] (from other
-## files) do not block it. On errors the clock keeps its previous state.
+## files) do not block it. On errors the clock keeps its previous state. A key that is not
+## part of the format only adds a warning (typo catcher).
 func configure(data: Dictionary, result: DataResult) -> void:
-	var errors_before: int = result.errors.size() + result.dropped_errors
-	for key: Variant in data:
-		if not str(key).begins_with("_") and not _KNOWN_KEYS.has(str(key)):
-			result.add_warning(_SOURCE, "unknown key '%s' (typo?)" % str(key))
+	var errors_before: int = DataChecks.error_count(result)
+	DataChecks.warn_unknown_keys(data, _KNOWN_KEYS, _SOURCE, result)
 	var phase_ids: Array[String] = []
 	var phase_names: Array[String] = []
 	var phase_seconds: Array[float] = []
@@ -95,7 +94,7 @@ func configure(data: Dictionary, result: DataResult) -> void:
 		result.add_error(_SOURCE, "max_step_seconds (%s) must be at most the shortest phase (%s s)"
 				% [str(max_step), str(phase_seconds.min())])
 	var speed_factors: Dictionary = _read_day_speed(data.get("day_speed"), result)
-	if result.errors.size() + result.dropped_errors > errors_before:
+	if DataChecks.error_count(result) > errors_before:
 		return
 	_phase_ids = phase_ids
 	_phase_names = phase_names
@@ -180,6 +179,11 @@ func get_phase_id() -> String:
 ## Vietnamese display name of the current phase.
 func get_phase_name() -> String:
 	return _phase_names[_phase_index]
+
+
+## Ids of every season, in cycle order (what crops.json and neighbors.json must refer to).
+func get_season_ids() -> Array[String]:
+	return _season_ids
 
 
 ## Id of the current season (matches ids used in crops.json).

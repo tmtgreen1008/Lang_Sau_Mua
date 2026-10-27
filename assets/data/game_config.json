@@ -1,0 +1,14 @@
+{
+  "_schema": {
+    "doc": "Gameplay numbers that used to be written into the code (ADR-0003 rule 8). Read by GameConfig (src/core/data/game_config.gd). Every key is required. Keys starting with '_' are ignored.",
+    "player.speed": "How fast the player walks, in pixels per second (greater than 0).",
+    "player.radius": "Radius of the player figure, in pixels (greater than 0).",
+    "field.columns": "Columns of the field (whole number, at least 1).",
+    "field.rows": "Rows of the field (whole number, at least 1).",
+    "field.tile_size": "Side of one field tile, in pixels (greater than 0).",
+    "hud.message_seconds": "How long a HUD message stays visible, in seconds (greater than 0)."
+  },
+  "player": { "speed": 360.0, "radius": 18.0 },
+  "field": { "columns": 5, "rows": 4, "tile_size": 80.0 },
+  "hud": { "message_seconds": 2.5 }
+}
