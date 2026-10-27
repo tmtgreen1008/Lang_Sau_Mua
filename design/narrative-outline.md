@@ -4,6 +4,13 @@
 > **Không thay thế** `design/game-brief.md`: brief vẫn là bản ghi thiết kế của MVP. Đề cương này mô tả hướng mở rộng sau MVP.
 > **Lời thoại mẫu** chỉ để thử giọng; mọi lời thoại cần người làm game đọc lại cho đúng chất quê.
 
+## Quyết định bổ sung (2026-10-26)
+- **Mốc làng:** đổi từ 0/2/4 thành **0/3/9** nhờ vả (tổng 12 nhờ vả).
+- **Chỗ tiêu tiền:** thêm **mua hạt giống ở chợ** (và vật liệu dựng làng khi cần).
+- **Sau lễ hội:** **chơi tự do tiếp**, không dừng ở cuối năm.
+- **Độ nghiêm ngặt:** nâng `modes.rigor` lên **standard** (mỗi hệ thống mới có tài liệu thiết kế riêng).
+- Còn mở: bí mật của Bà Tư (sợ quên) và Cô Sáu (con gái xa) đã đúng độ ấm chưa.
+
 ## Quyết định đã chốt
 - Nhân vật chính là **người con về lại làng** sau trận lũ. Tên **Mận** (tên ở nhà, hợp cả hai giới). **Người chơi chọn giới tính**; lời thoại dùng cách xưng hô trung tính ("con").
 - Giọng kể: **ấm áp, hài hước nhẹ** (hàng xóm trêu nhau).
